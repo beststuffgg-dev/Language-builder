@@ -27,6 +27,17 @@
       params: [{ key: "value", label: "Value", type: "text", default: "" }],
       eval: (input, p) => ({ out: str(p.value) }),
     },
+    lookup: {
+      category: "input", title: "Word (lookup)",
+      help: "Inserts another dictionary word by its spelling — so any part of a word can be another word.",
+      sockets: { in: [], out: [{ name: "out", type: "string" }] },
+      params: [{ key: "word", label: "Dictionary word", type: "text", default: "" }],
+      eval: (input, p, ctx) => {
+        const lex = (ctx && ctx.lexicon) || [];
+        const found = lex.find((e) => (e.headword || "").toLowerCase() === str(p.word).toLowerCase());
+        return { out: found ? found.headword : str(p.word) };
+      },
+    },
     prefix: {
       category: "string", title: "Add Prefix",
       sockets: { in: [{ name: "affix", type: "string" }, { name: "base", type: "string" }], out: [{ name: "out", type: "string" }] },
@@ -132,7 +143,7 @@
 
   // Grouped list for the "add node" menu.
   const GROUPS = [
-    { label: "Inputs", types: ["input", "param", "const"] },
+    { label: "Inputs", types: ["input", "param", "const", "lookup"] },
     { label: "Transform", types: ["prefix", "suffix", "concat", "replace", "case"] },
     { label: "Logic", types: ["startsWith", "endsWith", "contains", "equals", "not", "and", "or", "select"] },
     { label: "Output", types: ["output"] },

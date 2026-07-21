@@ -50,7 +50,7 @@
     }
     const table = U.el("table.lex");
     table.appendChild(U.el("thead", {}, [U.el("tr", {}, [
-      th("Word"), th("Spelling"), th("Part of speech"), th("Gender"), th("Definition"), th("Tags"), th(""),
+      th("Word"), th("Spelling"), th("Part of speech"), th("Gender"), th("Meaning"), th("Tags"), th(""),
     ])]));
     const tbody = U.el("tbody");
     rows.forEach((e) => {
@@ -76,10 +76,18 @@
   L.editEntry = function (entry) {
     const p = project();
     const isNew = !entry;
-    const e = entry ? U.clone(entry) : { id: U.uid("word"), headword: "", definition: "", pos: p.partsOfSpeech[0] || "", gender: "", tags: [], glyphSeq: [], notes: "" };
+    const e = entry ? U.clone(entry) : { id: U.uid("word"), headword: "", translations: {}, definition: "", pos: p.partsOfSpeech[0] || "", gender: "", tags: [], glyphSeq: [], parts: [], notes: "" };
+    e.translations = e.translations || {};
 
     const headIn = U.el("input", { value: e.headword, placeholder: "romanized spelling" });
-    const defIn = U.el("textarea", { value: e.definition, rows: 2, placeholder: "meaning / translation" });
+    // one translation field per natural language on the project
+    const transInputs = {};
+    const langs = p.translationLanguages.length ? p.translationLanguages : ["English"];
+    const transFields = langs.map((lang) => {
+      const inp = U.el("input", { value: e.translations[lang] || "", placeholder: "meaning in " + lang });
+      transInputs[lang] = inp;
+      return U.el("label.field", {}, [lang, inp]);
+    });
     const posSel = U.el("select");
     posSel.appendChild(U.el("option", { value: "", text: "—" }));
     p.partsOfSpeech.forEach((x) => posSel.appendChild(U.el("option", { value: x, text: x, selected: e.pos === x })));
@@ -109,20 +117,47 @@
       ]));
     });
 
+    // Word parts: compose this word from other words. Every part is itself a
+    // word, so any part can be swapped for a different word later.
+    e.parts = e.parts || [];
+    const partsPreview = U.el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "34px", padding: "6px", background: "var(--bg-3)", border: "1px solid var(--line)", borderRadius: "6px", alignItems: "center" } });
+    const renderParts = () => {
+      U.clear(partsPreview);
+      if (!e.parts.length) partsPreview.appendChild(U.el("span.hint", { text: "optional — pick words below to build a compound" }));
+      e.parts.forEach((wid, i) => {
+        const w = p.lexicon.find((x) => x.id === wid);
+        partsPreview.appendChild(U.el("span.tag", { style: { cursor: "pointer" }, title: "remove", text: (w ? w.headword : "?") + " ✕", onClick: () => { e.parts.splice(i, 1); renderParts(); } }));
+      });
+    };
+    renderParts();
+    const partPicker = U.el("select");
+    partPicker.appendChild(U.el("option", { value: "", text: "add a word part…" }));
+    p.lexicon.filter((x) => x.id !== e.id).forEach((w) => partPicker.appendChild(U.el("option", { value: w.id, text: w.headword + (w.definition ? " (" + w.definition + ")" : "") })));
+    partPicker.addEventListener("change", () => { if (partPicker.value) { e.parts.push(partPicker.value); partPicker.value = ""; renderParts(); } });
+    const buildFromParts = U.el("button.btn.small", { text: "Build spelling from parts →", onClick: () => {
+      const seq = [];
+      let head = "";
+      e.parts.forEach((wid) => { const w = p.lexicon.find((x) => x.id === wid); if (w) { seq.push.apply(seq, w.glyphSeq); head += w.headword; } });
+      if (seq.length) { e.glyphSeq = seq; renderSeq(); }
+      if (head && !headIn.value.trim()) headIn.value = head;
+    } });
+
     U.modal({
       title: isNew ? "Add word" : "Edit word",
       body: [
         U.el("div.row", {}, [U.el("label.field", {}, ["Word", headIn]), U.el("label.field", {}, ["Part of speech", posSel]), U.el("label.field", {}, ["Gender", genSel])]),
-        U.el("label.field", {}, ["Definition", defIn]),
+        U.el("div.field", {}, [U.el("span", { text: "Translations", style: { fontSize: "12px", color: "var(--text-dim)" } }), U.el("div.row", {}, transFields)]),
         U.el("label.field", {}, ["Tags", tagsIn]),
         U.el("label.field", {}, ["Spelling (glyphs)", seqPreview]),
         U.el("div.field", {}, [U.el("span", { text: "Add glyphs:", style: { fontSize: "12px", color: "var(--text-dim)" } }), palette]),
+        U.el("div.field", {}, [U.el("span", { text: "Word parts (compose from other words)", style: { fontSize: "12px", color: "var(--text-dim)" } }), partsPreview, U.el("div.row", { style: { alignItems: "center" } }, [partPicker, buildFromParts])]),
       ],
       confirmText: isNew ? "Add" : "Save",
       onConfirm: () => {
         e.headword = headIn.value.trim();
         if (!e.headword) { U.toast("Give the word a spelling.", true); return false; }
-        e.definition = defIn.value.trim();
+        langs.forEach((lang) => { const v = transInputs[lang].value.trim(); if (v) e.translations[lang] = v; else delete e.translations[lang]; });
+        e.definition = e.translations[langs[0]] || e.translations.English || "";
         e.pos = posSel.value;
         e.gender = genSel.value;
         e.tags = tagsIn.value.split(",").map((s) => s.trim()).filter(Boolean);
@@ -144,8 +179,9 @@
   function exportCSV() {
     const p = project();
     const esc = (s) => '"' + String(s == null ? "" : s).replace(/"/g, '""') + '"';
-    const lines = [["word", "pos", "gender", "definition", "tags"].join(",")];
-    p.lexicon.forEach((e) => lines.push([e.headword, e.pos, e.gender, e.definition, (e.tags || []).join(" ")].map(esc).join(",")));
+    const langs = p.translationLanguages.length ? p.translationLanguages : ["English"];
+    const lines = [["word", "pos", "gender"].concat(langs).concat(["tags"]).map(esc).join(",")];
+    p.lexicon.forEach((e) => lines.push([e.headword, e.pos, e.gender].concat(langs.map((l) => (e.translations || {})[l] || "")).concat([(e.tags || []).join(" ")]).map(esc).join(",")));
     U.download((p.name || "language") + "-dictionary.csv", lines.join("\n"), "text/csv");
     U.toast("Exported dictionary CSV");
   }

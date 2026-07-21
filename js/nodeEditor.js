@@ -358,7 +358,7 @@
     });
 
     function run() {
-      const res = Engine.run(rule.graph, { word: rule.test.word, params: rule.test.params });
+      const res = Engine.run(rule.graph, { word: rule.test.word, params: rule.test.params, lexicon: (project() || {}).lexicon || [] });
       U.clear(outEl);
       outEl.appendChild(U.el("span", { text: res.result || "∅" }));
       if (res.warning) outEl.appendChild(U.el("span.hint", { text: "  — " + res.warning, style: { fontSize: "12px" } }));

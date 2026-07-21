@@ -19,6 +19,12 @@
       rules: [],
       partsOfSpeech: ["noun", "verb", "adjective", "adverb", "pronoun", "particle"],
       genders: ["—", "masc", "fem", "neuter"],
+      // Natural languages you can translate to/from. English is just a default
+      // starting point — remove it for a truly blank slate; no grammar of any
+      // natural language is assumed anywhere in the app.
+      translationLanguages: ["English"],
+      lessons: [],
+      progress: {}, // wordId -> { box: <spaced-rep bucket>, seen, correct }
     };
   };
 
@@ -33,8 +39,15 @@
     out.rules = (p.rules || []).map(normRule);
     out.partsOfSpeech = p.partsOfSpeech || base.partsOfSpeech;
     out.genders = p.genders || base.genders;
+    out.translationLanguages = p.translationLanguages || base.translationLanguages;
+    out.lessons = (p.lessons || []).map(normLesson);
+    out.progress = p.progress || {};
     return out;
   };
+
+  function normLesson(l) {
+    return { id: l.id || U.uid("les"), title: l.title || "Lesson", notes: l.notes || "", wordIds: l.wordIds || [] };
+  }
 
   function normGlyph(g) {
     return {
@@ -50,14 +63,19 @@
   }
 
   function normEntry(e) {
+    const translations = e.translations || {};
+    // migrate the old single English gloss into the translations map
+    if (e.definition && translations.English == null) translations.English = e.definition;
     return {
       id: e.id || U.uid("word"),
       headword: e.headword || "",
-      definition: e.definition || "",
+      translations: translations, // { "English": "water", "Spanish": "agua", ... }
+      definition: translations.English || e.definition || "", // kept for compatibility
       pos: e.pos || "",
       gender: e.gender || "",
       tags: e.tags || [],
       glyphSeq: e.glyphSeq || [],
+      parts: e.parts || [], // other word ids this word is composed of (compounds/morphemes)
       notes: e.notes || "",
     };
   }

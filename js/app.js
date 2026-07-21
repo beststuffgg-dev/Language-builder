@@ -16,6 +16,8 @@
       case "lexicon": Lexicon.render(); break;
       case "rules": NodeEditor.refresh(); break;
       case "write": Compose.render(); break;
+      case "translate": Translator.render(); break;
+      case "learn": Learn.render(); break;
     }
   };
 
@@ -123,6 +125,7 @@
     document.getElementById("importFile").addEventListener("change", handleImportFile);
     document.getElementById("addGlyphBtn").addEventListener("click", () => GlyphEditor.addGlyph());
     document.getElementById("addRuleBtn").addEventListener("click", () => NodeEditor.addRule());
+    document.getElementById("shareBtn").addEventListener("click", () => Share.openDialog());
   }
 
   function firstRun() {
@@ -137,6 +140,8 @@
     Store.load();
     // normalize every project so older/imported data has all fields
     Object.keys(Store.data.projects).forEach((id) => { Store.data.projects[id] = Templates.normalize(Store.data.projects[id]); });
+    // if opened via a share link (#lang=...), import that language first
+    Share.checkHash();
     firstRun();
     if (!Store.data.activeProjectId) { const first = Store.projectList()[0]; if (first) Store.data.activeProjectId = first.id; }
     bind();

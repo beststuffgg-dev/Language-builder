@@ -61,10 +61,38 @@ your API, and the rest of the app is unchanged.
 - **Export** any glyph as SVG.
 
 ### Dictionary
-- Words with **definition, part of speech, gender/class, and tags**.
+- Words with **meaning, part of speech, gender/class, and tags**.
+- **Translations in any number of natural languages** (add your own).
 - **Spell** each word from your own glyphs.
+- **Compose words from other words** — a word can be built from parts that are
+  themselves words, and any part can be swapped for a different word. (You can
+  also do this inside rules with the *Word (lookup)* node.)
 - Search/filter and **export to CSV**.
 - Parts of speech and genders are fully configurable per language.
+
+### Translator
+- Translate **between your language and any natural language you add**, in
+  either direction.
+- Renders the conlang side in your actual glyphs (dictionary spelling, or
+  transliteration as a fallback).
+- Deliberately **word-by-word**: no natural-language grammar or word order is
+  imposed — a blank language is a true blank slate, and all structure comes from
+  the rules you build.
+
+### Font export
+- Turn your characters into a **real installable font** (`.ttf`), plus an SVG
+  font. Stroke-based glyphs are expanded into filled outlines automatically.
+- Single-letter romanizations map to that key; everything else maps to the
+  private-use area (a table shows the mapping). Includes a live preview.
+
+### Sharing
+- **Send a language to anyone** as a share link, a copy-paste code, or a file.
+  Opening a share link (or pasting a code) imports the language automatically.
+
+### Learn
+- A **language-learning framework**: group vocabulary into **lessons**, study
+  with **flashcards** (Leitner spaced-repetition boxes), and test yourself with
+  a **multiple-choice quiz**. Progress is tracked per word.
 
 ### Rules — visual node programming
 Build conjugation, grammar, and orthography rules as **node graphs**. Drag
@@ -112,11 +140,16 @@ js/glyphRender.js   pure glyph → SVG (connection styles, shapes)
 js/glyphEditor.js   interactive grid character designer
 js/ruleEngine.js    node definitions + graph evaluator
 js/nodeEditor.js    visual node-graph editor + live test
-js/lexicon.js       dictionary
+js/lexicon.js       dictionary (translations, word parts)
 js/compose.js       writing / transliteration / rule runner
+js/translator.js    two-way translator + language management
+js/fontExport.js    glyph → filled outline → TTF/SVG font
+js/learn.js         lessons, flashcards, quiz
+js/share.js         share link / code / file + boot import
 js/overview.js      dashboard, settings, template picker
 js/app.js           boot, tabs, project switching, import/export
 server.js           optional zero-dependency static server
+vendor/opentype.min.js   vendored (offline) TTF writer
 ```
 
 ## License

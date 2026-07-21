@@ -36,6 +36,17 @@
       ]),
     ]));
 
+    // Fonts & sharing
+    root.appendChild(U.el("div.card", {}, [
+      U.el("h2", { text: "Export & share" }),
+      U.el("p.muted", { text: "Turn your characters into an installable font, or send the whole language to someone." }),
+      U.el("div.inline-actions", {}, [
+        U.el("button.btn.primary", { text: "⤓ Export font", onClick: () => FontExport.openDialog() }),
+        U.el("button.btn", { text: "↗ Share language", onClick: () => Share.openDialog() }),
+        U.el("button.btn", { text: "Export JSON", onClick: () => { U.download((p.name || "language") + ".json", Store.exportProject(p)); U.toast("Exported " + p.name); } }),
+      ]),
+    ]));
+
     // Settings
     root.appendChild(buildSettings(p));
 

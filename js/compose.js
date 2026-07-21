@@ -114,7 +114,7 @@
           U.el("input", { value: C.ruleParams[k] || "", style: { maxWidth: "120px" }, onInput: (e) => { C.ruleParams[k] = e.target.value; render(); } }),
         ]));
       });
-      const res = Engine.run(rule.graph, { word: C.ruleWord, params: C.ruleParams });
+      const res = Engine.run(rule.graph, { word: C.ruleWord, params: C.ruleParams, lexicon: p.lexicon });
       U.clear(resultEl);
       resultEl.appendChild(U.el("span", { text: res.result || "∅" }));
       U.clear(glyphEl);

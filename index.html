@@ -21,6 +21,7 @@
     </div>
     <div class="spacer"></div>
     <div class="io-actions">
+      <button id="shareBtn" class="btn primary">Share</button>
       <button id="importBtn" class="btn">Import</button>
       <button id="exportBtn" class="btn">Export</button>
       <input type="file" id="importFile" accept="application/json" hidden />
@@ -34,6 +35,8 @@
     <button class="tab" data-tab="lexicon">Dictionary</button>
     <button class="tab" data-tab="rules">Rules&nbsp;(Nodes)</button>
     <button class="tab" data-tab="write">Compose</button>
+    <button class="tab" data-tab="translate">Translator</button>
+    <button class="tab" data-tab="learn">Learn</button>
   </nav>
 
   <main id="views">
@@ -79,12 +82,23 @@
     <section class="view" data-view="write">
       <div id="writeRoot" class="pad"></div>
     </section>
+
+    <!-- TRANSLATOR -->
+    <section class="view" data-view="translate">
+      <div id="translatorRoot" class="pad"></div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="view" data-view="learn">
+      <div id="learnRoot" class="pad"></div>
+    </section>
   </main>
 
   <div id="modalRoot"></div>
   <div id="toastRoot"></div>
 
   <!-- Load order matters: no ES modules so this runs from file:// with zero setup -->
+  <script src="vendor/opentype.min.js"></script>
   <script src="js/util.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/templates.js"></script>
@@ -94,6 +108,10 @@
   <script src="js/nodeEditor.js"></script>
   <script src="js/lexicon.js"></script>
   <script src="js/compose.js"></script>
+  <script src="js/translator.js"></script>
+  <script src="js/fontExport.js"></script>
+  <script src="js/learn.js"></script>
+  <script src="js/share.js"></script>
   <script src="js/overview.js"></script>
   <script src="js/app.js"></script>
 </body>
