@@ -40,37 +40,39 @@
     return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
   };
 
-  // Build path/element for a basic shape centred at grid point (c,r).
+  // Build an element for a shape defined by a grid-aligned bounding box
+  // {c,r,w,h}: the shape is inscribed in the box, so dragging corner-to-corner
+  // fits it neatly within the grid lines.
   R.shapeElement = function (shape, proj, stroke, sw) {
-    const center = proj.pt(shape.c, shape.r);
-    const unit = (proj.cw + proj.ch) / 2;
-    const rad = Math.max(2, (shape.size || 1) * unit * 0.6);
+    const p0 = proj.pt(shape.c, shape.r), p1 = proj.pt(shape.c + (shape.w || 1), shape.r + (shape.h || 1));
+    const x0 = Math.min(p0.x, p1.x), y0 = Math.min(p0.y, p1.y);
+    const x1 = Math.max(p0.x, p1.x), y1 = Math.max(p0.y, p1.y);
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.max(1, (x1 - x0) / 2), ry = Math.max(1, (y1 - y0) / 2);
     const rot = shape.rot || 0;
-    const common = { class: "g-shape", stroke, "stroke-width": sw, transform: `rotate(${rot} ${center.x} ${center.y})` };
+    const common = { class: "g-shape", stroke, "stroke-width": sw, transform: rot ? `rotate(${rot} ${cx} ${cy})` : null, "stroke-linejoin": "round", "data-shape": shape.id };
     switch (shape.type) {
       case "square":
-        return U.svg("rect", Object.assign({ x: center.x - rad, y: center.y - rad, width: rad * 2, height: rad * 2 }, common));
+        return U.svg("rect", Object.assign({ x: x0, y: y0, width: x1 - x0, height: y1 - y0, fill: "none" }, common));
       case "triangle": {
-        const h = rad * 1.2;
-        const pts = [[center.x, center.y - h], [center.x - rad, center.y + rad * 0.7], [center.x + rad, center.y + rad * 0.7]];
-        return U.svg("polygon", Object.assign({ points: pts.map((p) => p.join(",")).join(" ") }, common));
+        const pts = [[cx, y0], [x0, y1], [x1, y1]];
+        return U.svg("polygon", Object.assign({ points: pts.map((p) => p.join(",")).join(" "), fill: "none" }, common));
       }
       case "diamond": {
-        const pts = [[center.x, center.y - rad], [center.x + rad, center.y], [center.x, center.y + rad], [center.x - rad, center.y]];
-        return U.svg("polygon", Object.assign({ points: pts.map((p) => p.join(",")).join(" ") }, common));
+        const pts = [[cx, y0], [x1, cy], [cx, y1], [x0, cy]];
+        return U.svg("polygon", Object.assign({ points: pts.map((p) => p.join(",")).join(" "), fill: "none" }, common));
       }
       case "ring":
-        return U.svg("circle", Object.assign({ cx: center.x, cy: center.y, r: rad }, common, { fill: "none" }));
+        return U.svg("ellipse", Object.assign({ cx, cy, rx, ry, fill: "none" }, common));
       case "dot":
-        return U.svg("circle", { cx: center.x, cy: center.y, r: Math.max(2, rad * 0.35), fill: stroke });
+        return U.svg("ellipse", { cx, cy, rx, ry, fill: stroke });
       case "arc": {
-        // half-circle open at bottom
-        const d = `M ${center.x - rad} ${center.y} A ${rad} ${rad} 0 0 1 ${center.x + rad} ${center.y}`;
-        return U.svg("path", Object.assign({ d }, common, { fill: "none" }));
+        // half-ellipse open at the bottom, fitting the box
+        const d = `M ${x0} ${cy} A ${rx} ${ry} 0 0 1 ${x1} ${cy}`;
+        return U.svg("path", Object.assign({ d, fill: "none" }, common));
       }
       case "circle":
       default:
-        return U.svg("circle", Object.assign({ cx: center.x, cy: center.y, r: rad }, common, { fill: "none" }));
+        return U.svg("ellipse", Object.assign({ cx, cy, rx, ry, fill: "none" }, common));
     }
   };
 

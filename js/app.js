@@ -127,14 +127,25 @@
     document.getElementById("addGlyphBtn").addEventListener("click", () => GlyphEditor.addGlyph());
     document.getElementById("addRuleBtn").addEventListener("click", () => NodeEditor.addRule());
     document.getElementById("shareBtn").addEventListener("click", () => Share.openDialog());
+    document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+  }
+
+  const THEME_KEY = "language-builder:theme";
+  function applyTheme(theme) {
+    const light = theme === "light";
+    document.body.classList.toggle("light", light);
+    const btn = document.getElementById("themeBtn");
+    if (btn) { btn.textContent = light ? "☀" : "☾"; }
+  }
+  function toggleTheme() {
+    const next = document.body.classList.contains("light") ? "dark" : "light";
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    applyTheme(next);
   }
 
   function firstRun() {
-    // Seed a friendly starter language so the app isn't empty on first open.
-    if (!Store.projectList().length) {
-      const t = Templates.get("syllabary");
-      Store.addProject(t.build());
-    }
+    // No auto-seeded example language: an empty app shows the welcome screen
+    // with the template picker (including blank / high-res / hieroglyphic starts).
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -146,6 +157,7 @@
     firstRun();
     if (!Store.data.activeProjectId) { const first = Store.projectList()[0]; if (first) Store.data.activeProjectId = first.id; }
     bind();
+    try { applyTheme(localStorage.getItem(THEME_KEY) || "dark"); } catch (e) {}
     Store.onChange(() => App.renderProjectSelect());
     App.switchTab("overview");
     App.renderAll();

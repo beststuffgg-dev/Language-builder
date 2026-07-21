@@ -55,17 +55,18 @@
       }
     });
 
-    const unit = (1 / cols + 1 / rows) / 2;
     (glyph.shapes || []).forEach((s) => {
-      const c = nn(s.c, s.r), rad = (s.size || 1) * unit * 0.6;
+      const b0 = nn(s.c, s.r), b1 = nn(s.c + (s.w || 1), s.r + (s.h || 1));
+      const x0 = Math.min(b0.x, b1.x), y0 = Math.min(b0.y, b1.y), x1 = Math.max(b0.x, b1.x), y1 = Math.max(b0.y, b1.y);
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = (x1 - x0) / 2, ry = (y1 - y0) / 2;
       const rot = (s.rot || 0) * Math.PI / 180;
-      const rotate = (p) => ({ x: c.x + (p.x - c.x) * Math.cos(rot) - (p.y - c.y) * Math.sin(rot), y: c.y + (p.x - c.x) * Math.sin(rot) + (p.y - c.y) * Math.cos(rot) });
+      const rotate = (p) => ({ x: cx + (p.x - cx) * Math.cos(rot) - (p.y - cy) * Math.sin(rot), y: cy + (p.x - cx) * Math.sin(rot) + (p.y - cy) * Math.cos(rot) });
       let pts;
-      if (s.type === "square") pts = [{ x: c.x - rad, y: c.y - rad }, { x: c.x + rad, y: c.y - rad }, { x: c.x + rad, y: c.y + rad }, { x: c.x - rad, y: c.y + rad }];
-      else if (s.type === "triangle") pts = [{ x: c.x, y: c.y - rad * 1.2 }, { x: c.x - rad, y: c.y + rad * 0.7 }, { x: c.x + rad, y: c.y + rad * 0.7 }];
-      else if (s.type === "diamond") pts = [{ x: c.x, y: c.y - rad }, { x: c.x + rad, y: c.y }, { x: c.x, y: c.y + rad }, { x: c.x - rad, y: c.y }];
-      else if (s.type === "dot") { markInto(grid, N, c.x, c.y); return; }
-      else { pts = []; const seg = s.type === "arc" ? 12 : 24; const span = s.type === "arc" ? Math.PI : Math.PI * 2; for (let i = 0; i <= seg; i++) { const a = span * (i / seg); pts.push({ x: c.x + Math.cos(a) * rad, y: c.y + Math.sin(a) * rad }); } samplePolyline(grid, N, pts.map(rotate), s.type !== "arc"); return; }
+      if (s.type === "square") pts = [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+      else if (s.type === "triangle") pts = [{ x: cx, y: y0 }, { x: x0, y: y1 }, { x: x1, y: y1 }];
+      else if (s.type === "diamond") pts = [{ x: cx, y: y0 }, { x: x1, y: cy }, { x: cx, y: y1 }, { x: x0, y: cy }];
+      else if (s.type === "dot") { markInto(grid, N, cx, cy); return; }
+      else { pts = []; const seg = s.type === "arc" ? 12 : 24; const span = s.type === "arc" ? Math.PI : Math.PI * 2; const off = s.type === "arc" ? Math.PI : 0; for (let i = 0; i <= seg; i++) { const a = off + span * (i / seg); pts.push({ x: cx + Math.cos(a) * rx, y: cy - Math.sin(a) * ry }); } samplePolyline(grid, N, pts.map(rotate), s.type !== "arc"); return; }
       samplePolyline(grid, N, pts.map(rotate), true);
     });
 

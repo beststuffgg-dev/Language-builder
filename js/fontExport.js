@@ -73,19 +73,19 @@
     });
 
     (glyph.shapes || []).forEach((s) => {
-      const center = pt(s.c, s.r);
-      const rad = Math.max(6, (s.size || 1) * cell * 0.6);
+      const q0 = pt(s.c, s.r), q1 = pt(s.c + (s.w || 1), s.r + (s.h || 1));
+      const x0 = Math.min(q0.x, q1.x), y0 = Math.min(q0.y, q1.y), x1 = Math.max(q0.x, q1.x), y1 = Math.max(q0.y, q1.y);
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.max(6, (x1 - x0) / 2), ry = Math.max(6, (y1 - y0) / 2);
       const rot = (s.rot || 0) * Math.PI / 180;
-      const rotate = (p) => ({ x: center.x + (p.x - center.x) * Math.cos(rot) - (p.y - center.y) * Math.sin(rot), y: center.y + (p.x - center.x) * Math.sin(rot) + (p.y - center.y) * Math.cos(rot) });
-      if (s.type === "dot") { raw.push({ pts: disc(center.x, center.y, Math.max(8, rad * 0.35), 14), filled: true }); return; }
+      const rotate = (p) => ({ x: cx + (p.x - cx) * Math.cos(rot) - (p.y - cy) * Math.sin(rot), y: cy + (p.x - cx) * Math.sin(rot) + (p.y - cy) * Math.cos(rot) });
+      if (s.type === "dot") { const e = []; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; e.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry }); } raw.push({ pts: e, filled: true }); return; }
       let pts;
-      if (s.type === "square") pts = [{ x: center.x - rad, y: center.y - rad }, { x: center.x + rad, y: center.y - rad }, { x: center.x + rad, y: center.y + rad }, { x: center.x - rad, y: center.y + rad }];
-      else if (s.type === "triangle") pts = [{ x: center.x, y: center.y + rad * 1.2 }, { x: center.x - rad, y: center.y - rad * 0.7 }, { x: center.x + rad, y: center.y - rad * 0.7 }];
-      else if (s.type === "diamond") pts = [{ x: center.x, y: center.y + rad }, { x: center.x + rad, y: center.y }, { x: center.x, y: center.y - rad }, { x: center.x - rad, y: center.y }];
-      else if (s.type === "arc") { pts = []; for (let i = 0; i <= 12; i++) { const a = Math.PI * (i / 12); pts.push({ x: center.x - Math.cos(a) * rad, y: center.y + Math.sin(a) * rad }); } raw.push({ pts: pts.map(rotate), closed: false }); return; }
-      else { pts = disc(center.x, center.y, rad, 24); } // circle / ring
-      const closed = s.type !== "arc";
-      raw.push({ pts: pts.map(rotate), closed: closed });
+      if (s.type === "square") pts = [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+      else if (s.type === "triangle") pts = [{ x: cx, y: y1 }, { x: x0, y: y0 }, { x: x1, y: y0 }];
+      else if (s.type === "diamond") pts = [{ x: cx, y: y1 }, { x: x1, y: cy }, { x: cx, y: y0 }, { x: x0, y: cy }];
+      else if (s.type === "arc") { pts = []; for (let i = 0; i <= 12; i++) { const a = Math.PI * (i / 12); pts.push({ x: cx - Math.cos(a) * rx, y: cy + Math.sin(a) * ry }); } raw.push({ pts: pts.map(rotate), closed: false }); return; }
+      else { pts = []; for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; pts.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry }); } }
+      raw.push({ pts: pts.map(rotate), closed: s.type !== "arc" });
     });
 
     const contours = [];

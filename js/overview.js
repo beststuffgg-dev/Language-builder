@@ -62,11 +62,13 @@
   }
 
   function buildSettings(p) {
-    const colsIn = U.el("input", { type: "number", min: "1", max: "24", value: p.defaultGrid.cols, onChange: (e) => { p.defaultGrid.cols = U.clamp(+e.target.value || 1, 1, 24); Store.touch(); } });
-    const rowsIn = U.el("input", { type: "number", min: "1", max: "24", value: p.defaultGrid.rows, onChange: (e) => { p.defaultGrid.rows = U.clamp(+e.target.value || 1, 1, 24); Store.touch(); } });
+    const colsIn = U.el("input", { type: "number", min: "1", max: "32", value: p.defaultGrid.cols, onChange: (e) => { p.defaultGrid.cols = U.clamp(+e.target.value || 1, 1, 32); Store.touch(); } });
+    const rowsIn = U.el("input", { type: "number", min: "1", max: "32", value: p.defaultGrid.rows, onChange: (e) => { p.defaultGrid.rows = U.clamp(+e.target.value || 1, 1, 32); Store.touch(); } });
     const swIn = U.el("input", { type: "range", min: "1", max: "18", step: "0.5", value: p.style.strokeWidth, onInput: (e) => { p.style.strokeWidth = +e.target.value; Store.touch(); } });
     const strokeColor = U.el("input", { type: "color", value: p.style.strokeColor, onInput: (e) => { p.style.strokeColor = e.target.value; Store.touch(); } });
     const bgColor = U.el("input", { type: "color", value: p.style.bg, onInput: (e) => { p.style.bg = e.target.value; Store.touch(); } });
+    const wsSel = U.el("select", { onChange: (e) => { p.writingSystem = e.target.value; Store.touch(); } });
+    [["alphabet", "Alphabet (letters)"], ["syllabary", "Syllabary (syllable blocks)"], ["logographic", "Logographic (character-per-word, e.g. hieroglyphs)"]].forEach(([v, l]) => wsSel.appendChild(U.el("option", { value: v, text: l, selected: p.writingSystem === v })));
     const posIn = U.el("input", { value: p.partsOfSpeech.join(", "), onChange: (e) => { p.partsOfSpeech = e.target.value.split(",").map((s) => s.trim()).filter(Boolean); Store.touch(); } });
     const genIn = U.el("input", { value: p.genders.join(", "), onChange: (e) => { p.genders = e.target.value.split(",").map((s) => s.trim()).filter(Boolean); Store.touch(); } });
 
@@ -82,6 +84,7 @@
         U.el("label.field", {}, ["Stroke color", strokeColor]),
         U.el("label.field", {}, ["Canvas background", bgColor]),
       ]),
+      U.el("label.field", { style: { marginTop: "10px" } }, ["Writing system", wsSel]),
       U.el("label.field", { style: { marginTop: "10px" } }, ["Parts of speech (comma separated)", posIn]),
       U.el("label.field", { style: { marginTop: "10px" } }, ["Genders / classes (comma separated)", genIn]),
       U.el("div.hint", { style: { marginTop: "10px" } }, ["Use “—” as the first gender to mean “none”."]),

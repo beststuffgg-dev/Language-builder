@@ -8,6 +8,12 @@
   // Longest-match transliteration of a romanized string into a glyph sequence.
   C.transliterate = function (word) {
     const p = project();
+    // logographic scripts: a whole word maps to one character by meaning
+    if (p.writingSystem === "logographic") {
+      const lw = word.toLowerCase();
+      const byMeaning = p.glyphs.find((g) => (g.meaning || "").toLowerCase() === lw);
+      if (byMeaning) return [byMeaning.id];
+    }
     const glyphs = p.glyphs.filter((g) => g.romanization).slice().sort((a, b) => b.romanization.length - a.romanization.length);
     const seq = [];
     let i = 0;

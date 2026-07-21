@@ -46,7 +46,10 @@ your API, and the rest of the app is unchanged.
 ## Features
 
 ### Characters (grid glyph designer)
-- **Custom grid size per glyph** (columns × rows, up to 24×24).
+- **Custom grid size per glyph**, including high‑res grids up to **32×32**
+  (start from the *Blank · high‑res 10×10* template).
+- **Drag‑based or multi‑click** editing: drag a node to move it; **drag from one
+  node to another to connect** (or click two nodes in turn for complex work).
 - Place **nodes** on grid points; drag to move.
 - Connect nodes with four **connection styles**:
   1. **Direct** – straight line
@@ -55,8 +58,12 @@ your API, and the rest of the app is unchanged.
   4. **Straight (L)** – orthogonal right‑angle elbow
 
   *(Click any drawn line to cycle its style.)*
-- **Basic shapes**: circle, ring, square, triangle, diamond, arc, dot — sized
-  and placed on the grid.
+- **Basic shapes**: circle, ring, square, triangle, diamond, arc, dot —
+  **dragged corner‑to‑corner so they fit neatly inside the grid lines**.
+- **Writing systems**: alphabet, syllabary, or **logographic** (character‑per‑word,
+  e.g. hieroglyphs). Logographic glyphs carry a *meaning*, and you can write by
+  meaning in Compose/Translator. A *Logographic (hieroglyphs)* template is included.
+- **Light and dark mode** (toggle in the top bar; remembered per browser).
 - Per‑language style (stroke width, colors, grid visibility).
 - **Similarity meter** — while designing, it warns when a character looks too
   much like others in your language (size‑normalized shape comparison), so you

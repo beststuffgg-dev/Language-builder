@@ -84,86 +84,119 @@
   };
 
   function buildEditorSVG(g, p) {
-    const size = 460;
+    const size = 380; // keep the designer compact so it doesn't dominate the screen
     const svg = GlyphRender.render(g, { size, style: p.style, showGrid: p.style.showGrid !== false, showNodes: true, background: p.style.bg });
     const proj = svg._proj, box = svg._box;
     const cols = g.grid.cols, rows = g.grid.rows;
 
-    // Larger transparent hit targets over grid points for easy clicking.
+    // Transparent hit targets over grid points for easy, snappy clicking.
     for (let c = 0; c <= cols; c++) {
       for (let r = 0; r <= rows; r++) {
         const pt = proj.pt(c, r);
-        const hit = U.svg("circle", {
-          cx: pt.x, cy: pt.y, r: Math.max(7, Math.min(proj.cw, proj.ch) * 0.42),
-          fill: "transparent", "data-c": c, "data-r": r, style: "cursor:pointer",
-        });
-        svg.appendChild(hit);
+        svg.appendChild(U.svg("circle", { cx: pt.x, cy: pt.y, r: Math.max(7, Math.min(proj.cw, proj.ch) * 0.42), fill: "transparent", "data-c": c, "data-r": r, style: "cursor:pointer" }));
       }
     }
-    // highlight selected node
-    if (E.selectedNode) {
-      const n = g.nodes.find((x) => x.id === E.selectedNode);
-      if (n) { const pt = proj.pt(n.c, n.r); svg.querySelectorAll("[data-node='" + n.id + "']").forEach((e) => e.classList.add("sel")); }
-    }
-    if (E.pendingConnect) {
-      svg.querySelectorAll("[data-node='" + E.pendingConnect + "']").forEach((e) => e.classList.add("sel"));
-    }
+    if (E.selectedNode) svg.querySelectorAll("[data-node='" + E.selectedNode + "']").forEach((e) => e.classList.add("sel"));
+    if (E.pendingConnect) svg.querySelectorAll("[data-node='" + E.pendingConnect + "']").forEach((e) => e.classList.add("sel"));
 
-    // Interaction
-    const toModel = (evt) => {
-      const ptScreen = svg.createSVGPoint();
-      ptScreen.x = evt.clientX; ptScreen.y = evt.clientY;
-      const ctm = svg.getScreenCTM();
-      const loc = ptScreen.matrixTransform(ctm.inverse());
-      const c = U.clamp(Math.round((loc.x - box.x) / proj.cw), 0, cols);
-      const r = U.clamp(Math.round((loc.y - box.y) / proj.ch), 0, rows);
-      return { c, r };
-    };
+    // keep references so drag handlers survive re-renders
+    E._svg = svg; E._proj = proj; E._box = box; E._cols = cols; E._rows = rows; E._g = g;
 
-    svg.addEventListener("pointerdown", (evt) => {
-      const t = evt.target;
-      const nodeId = t.getAttribute("data-node");
-      const connId = t.getAttribute("data-conn");
-      if (connId && E.mode === "erase") { removeConnection(g, connId); commit(); return; }
-      if (connId && (E.mode === "node" || E.mode === "connect")) { cycleConnType(g, connId); commit(); return; }
-
-      if (nodeId) {
-        if (E.mode === "erase") { removeNode(g, nodeId); commit(); return; }
-        if (E.mode === "connect") { handleConnectClick(g, nodeId); commit(); return; }
-        // select + start drag
-        E.selectedNode = nodeId;
-        E.dragNode = nodeId; E.dragged = false;
-        svg.setPointerCapture(evt.pointerId);
-        commit();
-        return;
-      }
-
-      // clicked a grid hit (or blank)
-      const hasGrid = t.hasAttribute("data-c");
-      if (!hasGrid) return;
-      const c = +t.getAttribute("data-c"), r = +t.getAttribute("data-r");
-      if (E.mode === "node") {
-        addNode(g, c, r); commit();
-      } else if (E.mode === "shape") {
-        g.shapes.push({ id: U.uid("s"), type: E.shapeType, c, r, size: E.shapeSize, rot: 0 });
-        commit();
-      }
-    });
-
-    svg.addEventListener("pointermove", (evt) => {
-      if (!E.dragNode) return;
-      const { c, r } = toModel(evt);
-      const n = g.nodes.find((x) => x.id === E.dragNode);
-      if (n && (n.c !== c || n.r !== r)) { n.c = c; n.r = r; E.dragged = true; commit(); }
-    });
-
-    svg.addEventListener("pointerup", (evt) => {
-      if (E.dragNode) { try { svg.releasePointerCapture(evt.pointerId); } catch (e) {} }
-      E.dragNode = null;
-      if (E.dragged) { Store.touch(); E.dragged = false; }
-    });
-
+    svg.addEventListener("pointerdown", (evt) => onDown(evt, g));
     return svg;
+  }
+
+  // Map a pointer event to the nearest grid coordinate (snaps to grid lines).
+  function toModelEvt(evt) {
+    const svg = E._svg;
+    const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+    const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return {
+      c: U.clamp(Math.round((loc.x - E._box.x) / E._proj.cw), 0, E._cols),
+      r: U.clamp(Math.round((loc.y - E._box.y) / E._proj.ch), 0, E._rows),
+    };
+  }
+
+  function onDown(evt, g) {
+    const t = evt.target;
+    const connId = t.getAttribute("data-conn");
+    if (connId) {
+      if (E.mode === "erase") removeConnection(g, connId);
+      else cycleConnType(g, connId);
+      commit(); return;
+    }
+    const shapeId = t.getAttribute("data-shape");
+    if (shapeId && E.mode !== "shape") {
+      if (E.mode === "erase") { g.shapes = g.shapes.filter((s) => s.id !== shapeId); commit(); }
+      return; // ignore shape clicks in other modes (don't drop stray nodes)
+    }
+
+    // Everything else is resolved by grid coordinate.
+    let c, r;
+    if (t.hasAttribute("data-c")) { c = +t.getAttribute("data-c"); r = +t.getAttribute("data-r"); }
+    else { const m = toModelEvt(evt); c = m.c; r = m.r; }
+    const nodeAt = g.nodes.find((n) => n.c === c && n.r === r);
+
+    if (E.mode === "erase") { if (nodeAt) { removeNode(g, nodeAt.id); commit(); } return; }
+    if (E.mode === "shape") { startShapeDrag(c, r); return; }
+    if (E.mode === "connect") { if (nodeAt) startConnectDrag(nodeAt.id, c, r); return; }
+
+    // node mode (default): drag existing node, or add one and drag it into place
+    let id;
+    if (nodeAt) { E.selectedNode = nodeAt.id; id = nodeAt.id; }
+    else { const n = addNode(g, c, r); id = n.id; }
+    startNodeDrag(id);
+    commit();
+  }
+
+  function startNodeDrag(nodeId) {
+    const g = E._g; E.dragged = false;
+    const move = (ev) => { const { c, r } = toModelEvt(ev); const n = g.nodes.find((x) => x.id === nodeId); if (n && (n.c !== c || n.r !== r)) { n.c = c; n.r = r; E.dragged = true; commit(); } };
+    const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); if (E.dragged) Store.touch(); };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  }
+
+  // Drag from one corner to the opposite corner; the shape fits the grid box.
+  function startShapeDrag(c0, r0) {
+    const g = E._g;
+    const id = U.uid("s");
+    g.shapes.push({ id, type: E.shapeType, c: c0, r: r0, w: 0, h: 0, rot: 0 });
+    commit();
+    const move = (ev) => {
+      const m = toModelEvt(ev);
+      const s = g.shapes.find((x) => x.id === id); if (!s) return;
+      s.c = Math.min(c0, m.c); s.r = Math.min(r0, m.r); s.w = Math.abs(m.c - c0); s.h = Math.abs(m.r - r0);
+      commit();
+    };
+    const up = () => {
+      document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
+      const s = g.shapes.find((x) => x.id === id);
+      if (s && s.w < 0.5 && s.h < 0.5) { // a plain click → a default 2×2 shape at the point
+        s.w = 2; s.h = 2; s.c = U.clamp(c0 - 1, 0, E._cols); s.r = U.clamp(r0 - 1, 0, E._rows);
+      }
+      Store.touch(); commit();
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  }
+
+  // Drag node→node to connect; a plain click uses the multi-click flow instead.
+  function startConnectDrag(nodeId, c0, r0) {
+    const g = E._g; let moved = false;
+    const move = (ev) => { const m = toModelEvt(ev); if (m.c !== c0 || m.r !== r0) moved = true; };
+    const up = (ev) => {
+      document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
+      const m = toModelEvt(ev);
+      const target = g.nodes.find((n) => n.c === m.c && n.r === m.r);
+      if (target && target.id !== nodeId) {
+        const dup = g.connections.find((cc) => (cc.from === nodeId && cc.to === target.id) || (cc.from === target.id && cc.to === nodeId));
+        if (!dup) g.connections.push({ id: U.uid("c"), from: nodeId, to: target.id, type: E.connType, curve: 0.4 });
+        E.pendingConnect = null; commit();
+      } else if (!moved) { handleConnectClick(g, nodeId); commit(); }
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
   }
 
   function commit() {
@@ -214,9 +247,11 @@
     const panel = U.el("div.glyph-tools");
 
     // Glyph identity
+    const logographic = p.writingSystem === "logographic";
     const idGroup = U.el("div.tool-group", {}, [
       U.el("h4", { text: "Character" }),
       field("Name", U.el("input", { value: g.name, onInput: (e) => { g.name = e.target.value; Store.touch(); E.renderList(); } })),
+      field(logographic ? "Meaning (word)" : "Meaning", U.el("input", { value: g.meaning, placeholder: logographic ? "e.g. sun" : "optional — for logograms", onInput: (e) => { g.meaning = e.target.value; Store.touch(); E.renderList(); } })),
       field("Romanization", U.el("input", { value: g.romanization, placeholder: "e.g. ka", onInput: (e) => { g.romanization = e.target.value; Store.touch(); E.renderList(); } })),
       field("Sound / IPA", U.el("input", { value: g.sound, placeholder: "optional", onInput: (e) => { g.sound = e.target.value; Store.touch(); } })),
     ]);
@@ -253,13 +288,12 @@
         text: s, onClick: () => { E.shapeType = s; E.mode = "shape"; E.renderWorkspace(); },
       }));
     });
-    const sizeInput = U.el("input", { type: "range", min: "0.3", max: "4", step: "0.1", value: String(E.shapeSize), onInput: (e) => { E.shapeSize = +e.target.value; } });
     panel.appendChild(U.el("div.tool-group", {}, [U.el("h4", { text: "Basic shapes" }), shapeBtns,
-      U.el("label.field", {}, ["Shape size", sizeInput])]));
+      U.el("div.hint", { text: "Drag from one grid corner to the opposite corner — the shape fits inside the box." })]));
 
-    // Grid size
-    const colsIn = U.el("input", { type: "number", min: "1", max: "24", value: g.grid.cols, onChange: (e) => { g.grid.cols = U.clamp(+e.target.value || 1, 1, 24); clampNodes(g); commit(); } });
-    const rowsIn = U.el("input", { type: "number", min: "1", max: "24", value: g.grid.rows, onChange: (e) => { g.grid.rows = U.clamp(+e.target.value || 1, 1, 24); clampNodes(g); commit(); } });
+    // Grid size (supports high-res grids up to 32×32)
+    const colsIn = U.el("input", { type: "number", min: "1", max: "32", value: g.grid.cols, onChange: (e) => { g.grid.cols = U.clamp(+e.target.value || 1, 1, 32); clampNodes(g); commit(); } });
+    const rowsIn = U.el("input", { type: "number", min: "1", max: "32", value: g.grid.rows, onChange: (e) => { g.grid.rows = U.clamp(+e.target.value || 1, 1, 32); clampNodes(g); commit(); } });
     panel.appendChild(U.el("div.tool-group", {}, [U.el("h4", { text: "Grid size" }),
       U.el("div.mini-grid2", {}, [U.el("label.field", {}, ["Columns", colsIn]), U.el("label.field", {}, ["Rows", rowsIn])])]));
 
@@ -322,10 +356,10 @@
 
   function modeHint() {
     return {
-      node: "Click a grid point to add a node. Drag a node to move it.",
-      connect: "Click two nodes to connect them with the chosen style.",
-      shape: "Click a grid point to drop the selected shape.",
-      erase: "Click a node or line to remove it.",
+      node: "Click a grid point to add a node; drag to move it.",
+      connect: "Drag from one node to another to connect — or click two nodes in turn.",
+      shape: "Drag corner-to-corner to fit a shape inside the grid.",
+      erase: "Click a node, line, or shape to remove it.",
     }[E.mode];
   }
 

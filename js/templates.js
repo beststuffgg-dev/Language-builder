@@ -13,6 +13,8 @@
       createdAt: now,
       updatedAt: now,
       style: { strokeWidth: 6, strokeColor: "#e6edf3", nodeRadius: 5, showGrid: true, bg: "#1a2029" },
+      // alphabet | syllabary | logographic (logographic = character-per-word, e.g. hieroglyphs)
+      writingSystem: "alphabet",
       defaultGrid: { cols: 5, rows: 7 },
       glyphs: [],
       lexicon: [],
@@ -40,6 +42,7 @@
     out.partsOfSpeech = p.partsOfSpeech || base.partsOfSpeech;
     out.genders = p.genders || base.genders;
     out.translationLanguages = p.translationLanguages || base.translationLanguages;
+    out.writingSystem = p.writingSystem || base.writingSystem;
     out.lessons = (p.lessons || []).map(normLesson);
     out.progress = p.progress || {};
     return out;
@@ -55,11 +58,26 @@
       name: g.name || "glyph",
       romanization: g.romanization || "",
       sound: g.sound || "",
+      meaning: g.meaning || "", // for logographic/hieroglyphic scripts: what this character means
       grid: g.grid || { cols: 5, rows: 7 },
       nodes: g.nodes || [],
       connections: (g.connections || []).map((c) => ({ id: c.id || U.uid("c"), from: c.from, to: c.to, type: c.type || "direct", curve: c.curve == null ? 0.4 : c.curve })),
-      shapes: (g.shapes || []).map((s) => Object.assign({ id: U.uid("s"), type: "circle", c: 1, r: 1, size: 1, rot: 0 }, s)),
+      shapes: (g.shapes || []).map(normShape),
     };
+  }
+
+  // Shapes are stored as a grid-aligned bounding box {c,r,w,h} (top-left + span).
+  // Old center+size shapes are migrated to an equivalent box.
+  function normShape(s) {
+    const out = Object.assign({ id: U.uid("s"), type: "circle", rot: 0 }, s);
+    if (out.w == null || out.h == null) {
+      const side = (s.size || 1) * 1.2;
+      out.w = side; out.h = side;
+      out.c = (s.c || 0) - side / 2;
+      out.r = (s.r || 0) - side / 2;
+    }
+    delete out.size;
+    return out;
   }
 
   function normEntry(e) {
@@ -110,6 +128,52 @@
       build: () => {
         const p = T.blankProject("My language");
         return p;
+      },
+    },
+    {
+      key: "blank10",
+      name: "Blank · high-res (10×10)",
+      desc: "An empty language on a fine 10×10 grid for detailed characters. No example content at all.",
+      build: () => {
+        const p = T.blankProject("My language");
+        p.defaultGrid = { cols: 10, rows: 10 };
+        p.style.strokeWidth = 4;
+        return p;
+      },
+    },
+    {
+      key: "hiero",
+      name: "Logographic (hieroglyphs)",
+      desc: "Character-per-word script on a 12×12 grid — each glyph is a whole word/idea. No phonetic grammar assumed.",
+      build: () => {
+        const p = T.blankProject("Renet");
+        p.description = "A logographic script: every character stands for a whole word, like hieroglyphs.";
+        p.writingSystem = "logographic";
+        p.defaultGrid = { cols: 12, rows: 12 };
+        p.style.strokeWidth = 5;
+        const sun = makeGlyph("sun", "ra", 12, 12, (g, N, C, S) => {
+          S({ type: "ring", c: 3, r: 3, w: 6, h: 6 });
+          S({ type: "dot", c: 5.5, r: 5.5, w: 1, h: 1 });
+          C(N(6, 0), N(6, 2), "direct"); C(N(6, 10), N(6, 12), "direct");
+          C(N(0, 6), N(2, 6), "direct"); C(N(10, 6), N(12, 6), "direct");
+        });
+        sun.meaning = "sun";
+        const water = makeGlyph("water", "nu", 12, 12, (g, N, C) => {
+          [3, 6, 9].forEach((row) => { const a = N(1, row), b = N(6, row), c = N(11, row); C(a, b, "curved", 0.7); C(b, c, "curved", -0.7); });
+        });
+        water.meaning = "water";
+        const house = makeGlyph("house", "per", 12, 12, (g, N, C, S) => {
+          S({ type: "square", c: 3, r: 6, w: 6, h: 5 });
+          S({ type: "triangle", c: 2, r: 2, w: 8, h: 4 });
+        });
+        house.meaning = "house";
+        p.glyphs = [sun, water, house];
+        p.lexicon = [
+          { id: U.uid("word"), headword: "ra", translations: { English: "sun" }, definition: "sun", pos: "noun", glyphSeq: [sun.id] },
+          { id: U.uid("word"), headword: "nu", translations: { English: "water" }, definition: "water", pos: "noun", glyphSeq: [water.id] },
+          { id: U.uid("word"), headword: "per", translations: { English: "house" }, definition: "house", pos: "noun", glyphSeq: [house.id] },
+        ];
+        return T.normalize(p);
       },
     },
     {
