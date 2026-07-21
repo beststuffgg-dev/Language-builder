@@ -222,6 +222,9 @@
     ]);
     panel.appendChild(idGroup);
 
+    // Similarity meter — warns about confusable characters
+    panel.appendChild(buildSimilarity(g, p));
+
     // Mode buttons
     const modes = [["node", "Nodes"], ["connect", "Connect"], ["shape", "Shapes"], ["erase", "Erase"]];
     const modeBtns = U.el("div.tool-btns");
@@ -279,6 +282,42 @@
     panel.appendChild(actions);
 
     return panel;
+  }
+
+  function buildSimilarity(g, p) {
+    const group = U.el("div.tool-group", {}, [U.el("h4", { text: "Similarity check" })]);
+    const ranks = window.Similarity ? Similarity.rankAgainstOthers(g, p.glyphs) : [];
+    const empty = !(g.connections && g.connections.length) && !(g.shapes && g.shapes.length);
+    if (empty) { group.appendChild(U.el("div.hint", { text: "Draw the character to compare it to others." })); return group; }
+    if (!ranks.length) { group.appendChild(U.el("div.hint", { text: "No other characters to compare with yet." })); return group; }
+
+    const top = ranks[0];
+    const band = Similarity.band(top.score);
+    const pct = Math.round(top.score * 100);
+
+    // meter bar
+    const bar = U.el("div", { style: { height: "8px", borderRadius: "4px", background: "var(--bg-3)", overflow: "hidden", border: "1px solid var(--line)" } }, [
+      U.el("div", { style: { height: "100%", width: pct + "%", background: band.color, transition: "width .2s" } }),
+    ]);
+    group.appendChild(U.el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "12px" } }, [
+      U.el("span", { text: "Closest match", style: { color: "var(--text-dim)" } }),
+      U.el("span", { text: pct + "% · " + band.label, style: { color: band.color, fontWeight: "600" } }),
+    ]));
+    group.appendChild(bar);
+    if (band.level === "high") group.appendChild(U.el("div.hint", { text: "⚠ Very close to “" + top.glyph.name + "”. Consider making it more distinct to avoid confusion.", style: { color: "var(--danger)" } }));
+
+    // top few matches with thumbnails
+    const listWrap = U.el("div", { style: { display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" } });
+    ranks.slice(0, 3).forEach((r) => {
+      const b = Similarity.band(r.score);
+      listWrap.appendChild(U.el("div", { style: { display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }, title: "open", onClick: () => E.open(r.glyph.id) }, [
+        U.el("span.li-thumb", { style: { width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center" } }, [GlyphRender.render(r.glyph, { size: 24, width: 24, height: 24, padding: 3, style: p.style, strokeWidth: 3 })]),
+        U.el("span", { text: r.glyph.name, style: { flex: "1", fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }),
+        U.el("span", { text: Math.round(r.score * 100) + "%", style: { fontSize: "12px", color: b.color } }),
+      ]));
+    });
+    group.appendChild(listWrap);
+    return group;
   }
 
   function modeHint() {

@@ -18,6 +18,7 @@
       case "write": Compose.render(); break;
       case "translate": Translator.render(); break;
       case "learn": Learn.render(); break;
+      case "health": Health.render(); break;
     }
   };
 

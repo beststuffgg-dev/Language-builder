@@ -58,6 +58,9 @@ your API, and the rest of the app is unchanged.
 - **Basic shapes**: circle, ring, square, triangle, diamond, arc, dot — sized
   and placed on the grid.
 - Per‑language style (stroke width, colors, grid visibility).
+- **Similarity meter** — while designing, it warns when a character looks too
+  much like others in your language (size‑normalized shape comparison), so you
+  don't create confusable glyphs.
 - **Export** any glyph as SVG.
 
 ### Dictionary
@@ -93,6 +96,12 @@ your API, and the rest of the app is unchanged.
 - A **language-learning framework**: group vocabulary into **lessons**, study
   with **flashcards** (Leitner spaced-repetition boxes), and test yourself with
   a **multiple-choice quiz**. Progress is tracked per word.
+
+### Health
+- A **diagnostics section** that runs a battery of tests over your language,
+  scores it, tells you whether it's **fully functional**, and gives ranked
+  **recommendations** (with jump-to-fix buttons) — e.g. words missing spellings,
+  rules that don't produce output, confusable characters, thin vocabulary.
 
 ### Rules — visual node programming
 Build conjugation, grammar, and orthography rules as **node graphs**. Drag
@@ -140,11 +149,13 @@ js/glyphRender.js   pure glyph → SVG (connection styles, shapes)
 js/glyphEditor.js   interactive grid character designer
 js/ruleEngine.js    node definitions + graph evaluator
 js/nodeEditor.js    visual node-graph editor + live test
+js/similarity.js    glyph shape comparison (confusable-character meter)
 js/lexicon.js       dictionary (translations, word parts)
 js/compose.js       writing / transliteration / rule runner
 js/translator.js    two-way translator + language management
 js/fontExport.js    glyph → filled outline → TTF/SVG font
 js/learn.js         lessons, flashcards, quiz
+js/health.js        language diagnostics + recommendations
 js/share.js         share link / code / file + boot import
 js/overview.js      dashboard, settings, template picker
 js/app.js           boot, tabs, project switching, import/export
