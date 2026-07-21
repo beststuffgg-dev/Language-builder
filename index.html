@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Language Builder</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%92%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">✒︎</span>
+      <span class="brand-name">Language&nbsp;Builder</span>
+    </div>
+    <div class="project-switch">
+      <select id="projectSelect" title="Active language"></select>
+      <button id="newProjectBtn" class="btn" title="New language">＋</button>
+      <button id="renameProjectBtn" class="btn" title="Rename / settings">⚙</button>
+      <button id="deleteProjectBtn" class="btn danger" title="Delete language">🗑</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="io-actions">
+      <button id="importBtn" class="btn">Import</button>
+      <button id="exportBtn" class="btn">Export</button>
+      <input type="file" id="importFile" accept="application/json" hidden />
+      <span id="saveState" class="save-state">saved</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="glyphs">Characters</button>
+    <button class="tab" data-tab="lexicon">Dictionary</button>
+    <button class="tab" data-tab="rules">Rules&nbsp;(Nodes)</button>
+    <button class="tab" data-tab="write">Compose</button>
+  </nav>
+
+  <main id="views">
+    <!-- OVERVIEW -->
+    <section class="view active" data-view="overview">
+      <div id="overviewRoot" class="pad"></div>
+    </section>
+
+    <!-- GLYPHS -->
+    <section class="view" data-view="glyphs">
+      <div class="split">
+        <aside class="side">
+          <div class="side-head">
+            <span>Characters</span>
+            <button id="addGlyphBtn" class="btn small">＋ New</button>
+          </div>
+          <div id="glyphList" class="list"></div>
+        </aside>
+        <div class="glyph-workspace" id="glyphWorkspace"></div>
+      </div>
+    </section>
+
+    <!-- LEXICON -->
+    <section class="view" data-view="lexicon">
+      <div id="lexiconRoot" class="pad"></div>
+    </section>
+
+    <!-- RULES -->
+    <section class="view" data-view="rules">
+      <div class="split">
+        <aside class="side">
+          <div class="side-head">
+            <span>Rules</span>
+            <button id="addRuleBtn" class="btn small">＋ New</button>
+          </div>
+          <div id="ruleList" class="list"></div>
+        </aside>
+        <div class="rule-workspace" id="ruleWorkspace"></div>
+      </div>
+    </section>
+
+    <!-- WRITE / COMPOSE -->
+    <section class="view" data-view="write">
+      <div id="writeRoot" class="pad"></div>
+    </section>
+  </main>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot"></div>
+
+  <!-- Load order matters: no ES modules so this runs from file:// with zero setup -->
+  <script src="js/util.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/glyphRender.js"></script>
+  <script src="js/glyphEditor.js"></script>
+  <script src="js/ruleEngine.js"></script>
+  <script src="js/nodeEditor.js"></script>
+  <script src="js/lexicon.js"></script>
+  <script src="js/compose.js"></script>
+  <script src="js/overview.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
