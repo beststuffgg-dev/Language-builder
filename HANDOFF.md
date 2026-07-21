@@ -169,12 +169,27 @@ fits in the grid" work. Legacy `{c,r,size}` shapes are migrated in `normShape()`
 ## 6. Feature checklist (all implemented)
 
 - **Characters:** custom grid up to 32×32; nodes; four connection styles
-  (direct / curved / diagonal+straight / orthogonal); shapes drag‑to‑fit inside
-  the grid; per‑language style; **similarity meter**; SVG export.
+  (direct / curved / diagonal+straight / orthogonal), picked from a pictogram
+  "split‑square" quad; shapes drag‑to‑fit inside the grid; per‑language style;
+  **similarity meter**; SVG export. Toolbelt is icon‑based (inline `ICONS` map in
+  `glyphEditor.js`, rendered by `icon()` / `iconBtn()`).
 - **Editing model:** drag a node to move; **drag node→node to connect** (or
   multi‑click); drag corner‑to‑corner for shapes. (Note: the grid hit‑layer sits
   above nodes, so all interaction is routed by grid coordinate in
   `glyphEditor.onDown` — keep that invariant if you refactor.)
+- **Select tool (multi‑select + transform):** `E.mode === "select"` with
+  `E.sel = { nodes, conns, shapes }`. Rubber‑band marquee (`startMarquee`),
+  group move (`startSelectionDrag`, grid‑snapped from the drag origin), rotate/
+  flip about the selection centroid (`applyRotation`/`flipSelection`, which allow
+  **fractional** node coords — safe because similarity/font export/render all
+  treat `c,r` as floats), and delete (button or <kbd>Delete</kbd>; keys bound once
+  via `bindKeys`, gated to the active glyphs view). Selected connections pull in
+  their endpoint nodes for move/rotate (`effectiveNodes`).
+- **Customize afterwards:** a one‑item selection opens an inspector —
+  `buildConnInspector` (line style + curve‑amount slider) or `buildShapeInspector`
+  (shape type + width/height + rotation). Live sliders call `redrawCanvas()`
+  (rebuilds only the SVG, so the slider being dragged survives) and `commit()` on
+  release.
 - **Writing systems:** alphabet / syllabary / **logographic (hieroglyphs)**;
   per‑glyph `meaning`; write by meaning in Compose/Translator.
 - **Dictionary:** translations in any number of natural languages; part of
