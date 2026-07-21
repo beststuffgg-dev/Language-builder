@@ -57,9 +57,20 @@ your API, and the rest of the app is unchanged.
   3. **Diagonal + straight** – 45° diagonal then an axis‑aligned segment
   4. **Straight (L)** – orthogonal right‑angle elbow
 
-  *(Click any drawn line to cycle its style.)*
+  *(Click any drawn line to cycle its style — the style picker is a single
+  square split into four labelled pictogram quadrants.)*
 - **Basic shapes**: circle, ring, square, triangle, diamond, arc, dot —
   **dragged corner‑to‑corner so they fit neatly inside the grid lines**.
+- **Select tool (multi‑select + transform):** switch to **Select**, then drag a
+  box over the grid to grab many nodes, lines and shapes at once (Shift‑click to
+  add/remove, Ctrl/⌘‑A to select all). With a selection you can:
+  - **move** everything together by dragging,
+  - **rotate** ±90° (or nudge with a fine‑rotate slider) and **flip** H/V,
+  - **delete** it (or press <kbd>Delete</kbd>; <kbd>Esc</kbd> clears).
+- **Customize curves and shapes after the fact:** select a single **line** to
+  retune its style and a **curve‑amount** slider (negative bows the other way);
+  select a single **shape** (e.g. a circle/“sphere”) to change its type, its
+  **width/height**, and its **rotation** — all live.
 - **Writing systems**: alphabet, syllabary, or **logographic** (character‑per‑word,
   e.g. hieroglyphs). Logographic glyphs carry a *meaning*, and you can write by
   meaning in Compose/Translator. A *Logographic (hieroglyphs)* template is included.

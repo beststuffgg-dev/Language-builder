@@ -194,9 +194,55 @@ main { flex: 1; overflow: hidden; position: relative; }
 .grid-dot { fill: #34404f; }
 .grid-dot:hover { fill: var(--accent); }
 .g-node { fill: var(--accent-2); stroke: #0b1220; stroke-width: 1.5; cursor: pointer; }
-.g-node.sel { fill: var(--warn); }
+.g-node.sel { fill: var(--accent); stroke: var(--accent); r: 6.5; filter: drop-shadow(0 0 3px var(--accent)); }
 .g-conn { fill: none; stroke: var(--text); stroke-linecap: round; }
+.g-conn.sel { stroke: var(--accent); filter: drop-shadow(0 0 3px var(--accent)); }
 .g-shape { fill: none; stroke: var(--text); }
+.g-shape.sel { stroke: var(--accent); filter: drop-shadow(0 0 3px var(--accent)); }
+
+/* rubber-band marquee */
+.marquee { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 3; pointer-events: none; }
+
+/* ---------- Icon controls (glyph editor toolbelt) ---------- */
+.ico { display: block; flex: none; }
+.iconbtn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 6px; min-width: 0; border: 1px solid var(--line-2); border-radius: 10px;
+  background: var(--panel-2); color: var(--text-dim); cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s, transform .05s;
+}
+.iconbtn .lbl { font-size: 10.5px; letter-spacing: .2px; line-height: 1; }
+.iconbtn:hover { background: var(--bg-3); border-color: var(--accent); color: var(--text); }
+.iconbtn:active { transform: translateY(1px); }
+.iconbtn.active { background: var(--accent); border-color: var(--accent); color: #0b1220; }
+.iconbtn.danger:hover { border-color: var(--danger); color: var(--danger); }
+.iconbtn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.iconbtn-row .iconbtn { flex: 1 1 0; min-width: 52px; }
+.iconbtn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
+/* the "split square" connection picker: 2×2 quadrants sharing inner borders */
+.quad {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: var(--bg-3);
+}
+.quad-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  aspect-ratio: 1 / 1; border: 0; background: transparent; color: var(--text-dim); cursor: pointer;
+  border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  transition: background .12s, color .12s;
+}
+.quad-cell:nth-child(2n) { border-right: 0; }
+.quad-cell:nth-child(n+3) { border-bottom: 0; }
+.quad-cell .lbl { font-size: 10.5px; letter-spacing: .2px; }
+.quad-cell:hover { background: var(--panel-2); color: var(--text); }
+.quad-cell.active { background: var(--accent); color: #0b1220; }
+.quad.mini .quad-cell { gap: 0; aspect-ratio: 3 / 2; border-radius: 0; }
+
+.sub-inspector {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+  padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-3);
+}
+.sel-count { font-size: 12px; font-weight: 600; color: var(--accent); }
 
 /* ---------- Node editor ---------- */
 .rule-workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
