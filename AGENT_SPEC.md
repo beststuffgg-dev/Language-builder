@@ -48,6 +48,7 @@ If you rebuild it, keep these **hard constraints** unless told otherwise:
 | `js/nodeEditor.js` | `NodeEditor` | Visual node-graph editor for rules + live test. |
 | `js/lexicon.js` | `Lexicon` | Dictionary: words, multi-category, meaning combination, character-words. |
 | `js/photoImport.js` | `PhotoImport` | "Snap": photo → traced glyph → review menu → dictionary word. |
+| `js/sheetImport.js` | `SheetImport` | Import a spreadsheet (CSV/TSV/paste) → column map → review grid (category toggles, auto-assigned characters, per-word symbol picker) → dictionary words. |
 | `js/compose.js` | `Compose` | Write text in the script (dictionary lookup + transliteration); run a rule over a word. |
 | `js/translator.js` | `Translator` | Two-way word-by-word translation; manage translation languages. |
 | `js/fontExport.js` | `FontExport` | Expand strokes to filled outlines; pack into TTF (opentype.js) + SVG font. |
@@ -294,6 +295,33 @@ Goal: add dictionary words from photos, fully in-browser.
 
 Tracing is deterministic and has **no dependencies** — reproduce it exactly and
 the output is stable.
+
+---
+
+## 8b. Spreadsheet import (`SheetImport`)
+
+Bulk-add dictionary words from a spreadsheet, opened from the Dictionary header
+("⤓ Import sheet") which renders `SheetImport.open()` into `lexiconRoot`.
+
+1. **Input**: a `.csv`/`.tsv` file **or** cells pasted from Excel/Google Sheets.
+   `parseDelimited` is a quote-aware parser that auto-detects the delimiter (tab,
+   else `;` or `,`). Excel `.xlsx` is a zip — not parsed in-browser; the UI tells
+   the user to export as CSV or paste.
+2. **Column mapping**: `guessMap` auto-maps by header keywords (word / meaning /
+   part of speech / gender / tags); the user can override each with a select and
+   toggle "first row is a header". `buildItems` derives one working item per data
+   row, matching free-text pos/gender against the project's option lists
+   (`matchOptions`).
+3. **Review grid**: per row — include checkbox, editable word + meaning, **pos
+   toggle chips** (`Lexicon.multiChips` with an `onChange` writing back to the
+   item), and a **symbol slot** (`.sym-slot`). "✦ Auto-assign characters" spells
+   each word from existing glyphs via `Compose.transliterate` ("imports the most
+   characters" it can match).
+4. **Symbol picker** (click a slot): a modal to toggle existing characters into
+   the word's `glyphSeq`, auto-spell, or **make a new character** for the word
+   (seeded with its romanization/meaning, pushed to `project.glyphs`).
+5. **Import**: each included item becomes an `Entry` (headword falling back to
+   `Lexicon.nameFromGlyphs` or the meaning), tagged `imported`.
 
 ---
 

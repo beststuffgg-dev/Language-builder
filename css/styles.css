@@ -530,3 +530,18 @@ label.field { gap: 3px; }
 .snap-card { padding: 12px; gap: 10px; }
 .snap-controls { gap: 8px; }
 .snap-fields { gap: 8px; }
+
+/* ---------- Spreadsheet import ---------- */
+.sheet-map { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.sheet-table td { vertical-align: middle; }
+.sheet-table .chips { gap: 4px; }
+.sheet-table .chip { padding: 2px 8px; font-size: 11px; }
+.sym-slot {
+  display: inline-flex; align-items: center; gap: 4px; min-width: 46px; min-height: 40px;
+  padding: 3px 6px; border: 1px dashed var(--line-2); border-radius: var(--radius-sm);
+  background: var(--bg-3); cursor: pointer; transition: border-color .14s, background .14s;
+}
+.sym-slot:hover { border-color: var(--accent); background: var(--panel-2); }
+.sym-plus { color: var(--text-mute); font-size: 20px; line-height: 1; }
+.sym-current { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 44px; padding: 8px; background: var(--bg-3); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.sym-picker-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow: auto; }

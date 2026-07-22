@@ -48,7 +48,7 @@
         const label = typeof o === "string" ? o : o.label;
         if (!val || val === "—") return;
         const on = chosen.has(val);
-        wrap.appendChild(U.el("button.chip" + (on ? ".on" : ""), { type: "button", onClick: () => { on ? chosen.delete(val) : chosen.add(val); draw(); } }, [label]));
+        wrap.appendChild(U.el("button.chip" + (on ? ".on" : ""), { type: "button", onClick: () => { on ? chosen.delete(val) : chosen.add(val); draw(); if (opts.onChange) opts.onChange(Array.from(chosen)); } }, [label]));
       });
       if (!wrap.childNodes.length) wrap.appendChild(U.el("span.hint", { text: opts.empty || "none defined" }));
     };
@@ -153,6 +153,7 @@
       U.el("h2", { text: "Dictionary", style: { margin: "0", flex: "0" } }),
       U.el("input", { placeholder: "search words / definitions / tags…", value: L.filter, style: { flex: "1", minWidth: "180px" }, onInput: (e) => { L.filter = e.target.value.toLowerCase(); L.renderTable(); } }),
       U.el("button.btn.primary", { text: "＋ Add word", onClick: () => L.editEntry(null) }),
+      U.el("button.btn", { text: "⤓ Import sheet", title: "Bulk-import words from a spreadsheet", onClick: () => { if (window.SheetImport) SheetImport.open(); } }),
       U.el("button.btn", { text: "Export CSV", onClick: exportCSV }),
     ]);
     root.appendChild(header);
