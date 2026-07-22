@@ -15,6 +15,8 @@
       style: { strokeWidth: 6, strokeColor: "#e6edf3", nodeRadius: 5, showGrid: true, bg: "#1a2029" },
       // alphabet | syllabary | logographic (logographic = character-per-word, e.g. hieroglyphs)
       writingSystem: "alphabet",
+      // when on, every new character also becomes a dictionary word linked to it
+      autoWordForNewGlyph: false,
       defaultGrid: { cols: 5, rows: 7 },
       glyphs: [],
       lexicon: [],
@@ -43,6 +45,7 @@
     out.genders = p.genders || base.genders;
     out.translationLanguages = p.translationLanguages || base.translationLanguages;
     out.writingSystem = p.writingSystem || base.writingSystem;
+    out.autoWordForNewGlyph = p.autoWordForNewGlyph || false;
     out.lessons = (p.lessons || []).map(normLesson);
     out.progress = p.progress || {};
     return out;
@@ -84,16 +87,28 @@
     const translations = e.translations || {};
     // migrate the old single English gloss into the translations map
     if (e.definition && translations.English == null) translations.English = e.definition;
+    // A word can be categorized as several parts of speech at once. posList is the
+    // source of truth; the legacy single `pos` is kept in sync as the first entry.
+    let posList = Array.isArray(e.posList) ? e.posList.slice() : (e.pos ? [e.pos] : []);
+    posList = posList.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+    // Gender/class can likewise be multiple.
+    let genderList = Array.isArray(e.genderList) ? e.genderList.slice() : (e.gender ? [e.gender] : []);
+    genderList = genderList.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
     return {
       id: e.id || U.uid("word"),
       headword: e.headword || "",
       translations: translations, // { "English": "water", "Spanish": "agua", ... }
       definition: translations.English || e.definition || "", // kept for compatibility
-      pos: e.pos || "",
-      gender: e.gender || "",
+      posList: posList,          // e.g. ["noun","verb"] — a word may be several at once
+      pos: posList[0] || "",     // kept for compatibility (first category)
+      genderList: genderList,
+      gender: genderList[0] || "",
       tags: e.tags || [],
       glyphSeq: e.glyphSeq || [],
       parts: e.parts || [], // other word ids this word is composed of (compounds/morphemes)
+      // if this word is auto-linked to a single character, the glyph id it mirrors
+      // (kept in sync when the character is renamed / re-glossed)
+      fromGlyph: e.fromGlyph || null,
       notes: e.notes || "",
     };
   }

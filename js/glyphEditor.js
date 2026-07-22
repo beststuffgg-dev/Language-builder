@@ -125,6 +125,8 @@
       grid: U.clone(p.defaultGrid), nodes: [], connections: [], shapes: [],
     };
     p.glyphs.push(g);
+    // optionally make every new character a dictionary word too
+    if (window.Lexicon) Lexicon.autoWordForGlyph(g);
     Store.touch();
     E.open(g.id);
   };
@@ -498,14 +500,27 @@
 
     // Glyph identity
     const logographic = p.writingSystem === "logographic";
+    const syncWord = () => { if (window.Lexicon) Lexicon.syncWordFromGlyph(g); };
     const idGroup = U.el("div.tool-group", {}, [
       U.el("h4", { text: "Character" }),
-      field("Name", U.el("input", { value: g.name, onInput: (e) => { g.name = e.target.value; Store.touch(); E.renderList(); } })),
-      field(logographic ? "Meaning (word)" : "Meaning", U.el("input", { value: g.meaning, placeholder: logographic ? "e.g. sun" : "optional — for logograms", onInput: (e) => { g.meaning = e.target.value; Store.touch(); E.renderList(); } })),
-      field("Romanization", U.el("input", { value: g.romanization, placeholder: "e.g. ka", onInput: (e) => { g.romanization = e.target.value; Store.touch(); E.renderList(); } })),
+      field("Name", U.el("input", { value: g.name, onInput: (e) => { g.name = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
+      field(logographic ? "Meaning (word)" : "Meaning", U.el("input", { value: g.meaning, placeholder: logographic ? "e.g. sun" : "optional — for logograms", onInput: (e) => { g.meaning = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
+      field("Romanization", U.el("input", { value: g.romanization, placeholder: "optional — a character can be a word on its own", onInput: (e) => { g.romanization = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
       field("Sound / IPA", U.el("input", { value: g.sound, placeholder: "optional", onInput: (e) => { g.sound = e.target.value; Store.touch(); } })),
     ]);
     panel.appendChild(idGroup);
+
+    // Words: turn this character into a dictionary word, and auto-word new ones.
+    const isWord = window.Lexicon && p.lexicon.some((w) => w.fromGlyph === g.id);
+    const autoWordChk = U.el("input", { type: "checkbox", checked: !!p.autoWordForNewGlyph, onChange: (e) => { p.autoWordForNewGlyph = e.target.checked; Store.touch(); } });
+    const wordGroup = U.el("div.tool-group", {}, [
+      U.el("h4", { text: "Words" }),
+      isWord
+        ? U.el("div.hint", { text: "✓ This character is a word in your dictionary (kept in sync)." })
+        : U.el("button.btn.small", { text: "＋ Make this character a word", onClick: () => { const w = Lexicon.wordFromGlyph(g); if (w) { U.toast("Added “" + w.headword + "” to the dictionary"); E.renderWorkspace(); } } }),
+      U.el("label", { style: { display: "flex", gap: "8px", alignItems: "center", fontSize: "12px" } }, [autoWordChk, "New characters auto-become words"]),
+    ]);
+    panel.appendChild(wordGroup);
 
     // Similarity meter — warns about confusable characters
     panel.appendChild(buildSimilarity(g, p));

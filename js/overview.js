@@ -69,6 +69,7 @@
     const bgColor = U.el("input", { type: "color", value: p.style.bg, onInput: (e) => { p.style.bg = e.target.value; Store.touch(); } });
     const wsSel = U.el("select", { onChange: (e) => { p.writingSystem = e.target.value; Store.touch(); } });
     [["alphabet", "Alphabet (letters)"], ["syllabary", "Syllabary (syllable blocks)"], ["logographic", "Logographic (character-per-word, e.g. hieroglyphs)"]].forEach(([v, l]) => wsSel.appendChild(U.el("option", { value: v, text: l, selected: p.writingSystem === v })));
+    const autoWordChk = U.el("input", { type: "checkbox", checked: !!p.autoWordForNewGlyph, onChange: (e) => { p.autoWordForNewGlyph = e.target.checked; Store.touch(); } });
     const posIn = U.el("input", { value: p.partsOfSpeech.join(", "), onChange: (e) => { p.partsOfSpeech = e.target.value.split(",").map((s) => s.trim()).filter(Boolean); Store.touch(); } });
     const genIn = U.el("input", { value: p.genders.join(", "), onChange: (e) => { p.genders = e.target.value.split(",").map((s) => s.trim()).filter(Boolean); Store.touch(); } });
 
@@ -85,6 +86,7 @@
         U.el("label.field", {}, ["Canvas background", bgColor]),
       ]),
       U.el("label.field", { style: { marginTop: "10px" } }, ["Writing system", wsSel]),
+      U.el("label", { style: { display: "flex", gap: "8px", alignItems: "center", fontSize: "13px", marginTop: "10px" } }, [autoWordChk, "Automatically make every new character a dictionary word"]),
       U.el("label.field", { style: { marginTop: "10px" } }, ["Parts of speech (comma separated)", posIn]),
       U.el("label.field", { style: { marginTop: "10px" } }, ["Genders / classes (comma separated)", genIn]),
       U.el("div.hint", { style: { marginTop: "10px" } }, ["Use “—” as the first gender to mean “none”."]),

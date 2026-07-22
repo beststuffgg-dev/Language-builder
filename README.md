@@ -81,13 +81,30 @@ your API, and the rest of the app is unchanged.
   don't create confusable glyphs.
 - **Export** any glyph as SVG.
 
+### Snap — add words from a photo 📷
+- **Take or upload a photo** (the camera opens directly on mobile); each photo is
+  **auto-traced into a character** entirely on your device — no image ever leaves
+  the browser.
+- A **review menu** per photo lets you tune the trace (detail, ink threshold,
+  line vs. dot style, invert), give it a **meaning** and **categories**, and check
+  the result before adding.
+- Adds the traced symbol as a **character** and, optionally, a **dictionary
+  word** in one step.
+
 ### Dictionary
-- Words with **meaning, part of speech, gender/class, and tags**.
+- Words with **meaning, tags, and multiple categories** — part of speech and
+  gender/class are **toggles**, so a word can be several things at once (e.g. both
+  noun *and* verb).
 - **Translations in any number of natural languages** (add your own).
-- **Spell** each word from your own glyphs.
-- **Compose words from other words** — a word can be built from parts that are
-  themselves words, and any part can be swapped for a different word. (You can
-  also do this inside rules with the *Word (lookup)* node.)
+- **A character can be a word on its own** — no romanization required. Leave the
+  word blank and it's named after its characters, or hit **“Make this character a
+  word”** in the Characters tab. Turn on **“new characters auto-become words”** to
+  do it for every new character automatically.
+- **Build words by combining characters that mean things** — click characters to
+  spell a word, then **“Combine character meanings”** composes the new word's
+  meaning from theirs (great for logographic scripts).
+- **Compose words from other words** too — parts are themselves words, swappable
+  later. (Also available inside rules via the *Word (lookup)* node.)
 - Search/filter and **export to CSV**.
 - Parts of speech and genders are fully configurable per language.
 

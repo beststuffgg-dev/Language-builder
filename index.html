@@ -33,6 +33,7 @@
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="overview">Overview</button>
     <button class="tab" data-tab="glyphs">Characters</button>
+    <button class="tab" data-tab="snap">Snap&nbsp;📷</button>
     <button class="tab" data-tab="lexicon">Dictionary</button>
     <button class="tab" data-tab="rules">Rules&nbsp;(Nodes)</button>
     <button class="tab" data-tab="write">Compose</button>
@@ -59,6 +60,11 @@
         </aside>
         <div class="glyph-workspace" id="glyphWorkspace"></div>
       </div>
+    </section>
+
+    <!-- SNAP / PHOTO IMPORT -->
+    <section class="view" data-view="snap">
+      <div id="snapRoot" class="pad"></div>
     </section>
 
     <!-- LEXICON -->
@@ -115,6 +121,7 @@
   <script src="js/nodeEditor.js"></script>
   <script src="js/similarity.js"></script>
   <script src="js/lexicon.js"></script>
+  <script src="js/photoImport.js"></script>
   <script src="js/compose.js"></script>
   <script src="js/translator.js"></script>
   <script src="js/fontExport.js"></script>

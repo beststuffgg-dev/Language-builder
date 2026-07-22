@@ -13,6 +13,7 @@
     switch (tab) {
       case "overview": Overview.render(); break;
       case "glyphs": GlyphEditor.refresh(); break;
+      case "snap": PhotoImport.render(); break;
       case "lexicon": Lexicon.render(); break;
       case "rules": NodeEditor.refresh(); break;
       case "write": Compose.render(); break;
