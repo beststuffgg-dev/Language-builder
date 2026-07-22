@@ -59,6 +59,12 @@ your API, and the rest of the app is unchanged.
 
   *(Click any drawn line to cycle its style — the style picker is a single
   square split into four labelled pictogram quadrants.)*
+- **Copy / paste & character groups** — **Copy** a character (Ctrl/⌘+C) and
+  **Paste as new** (Ctrl/⌘+V) to reuse it anywhere, even in another language;
+  **Paste into** overlays the copied character onto the current one so a family
+  can share the same starting part. Give characters a **Group / family** name
+  (or hit **＋ Variant** to duplicate into the same group) and the sidebar sorts
+  them into labelled groups — handy when words in a category share a base shape.
 - **Basic shapes**: circle, ring, square, triangle, diamond, arc, dot —
   **dragged corner‑to‑corner so they fit neatly inside the grid lines**.
 - **Select tool (multi‑select + transform):** switch to **Select**, then drag a

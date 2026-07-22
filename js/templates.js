@@ -62,6 +62,7 @@
       romanization: g.romanization || "",
       sound: g.sound || "",
       meaning: g.meaning || "", // for logographic/hieroglyphic scripts: what this character means
+      group: g.group || "",     // optional family name — characters that share a base/starting part
       grid: g.grid || { cols: 5, rows: 7 },
       nodes: g.nodes || [],
       connections: (g.connections || []).map((c) => ({ id: c.id || U.uid("c"), from: c.from, to: c.to, type: c.type || "direct", curve: c.curve == null ? 0.4 : c.curve })),

@@ -95,16 +95,23 @@
     if (!p.glyphs.length) {
       list.appendChild(U.el("div.empty-hint", { text: "No characters yet. Click “＋ New”." }));
     }
-    p.glyphs.forEach((g) => {
+    const item = (g) => {
       const thumb = GlyphRender.render(g, { size: 30, width: 30, height: 30, padding: 4, style: p.style, strokeWidth: 3 });
-      const item = U.el("div.list-item" + (g.id === E.glyphId ? ".active" : ""), { onClick: () => E.open(g.id) }, [
+      return U.el("div.list-item" + (g.id === E.glyphId ? ".active" : ""), { onClick: () => E.open(g.id) }, [
         U.el("span.li-thumb", { style: { display: "flex", alignItems: "center", justifyContent: "center" } }, [thumb]),
         U.el("div", { style: { flex: "1", overflow: "hidden" } }, [
           U.el("div.li-title", { text: g.name || "glyph" }),
           U.el("div.li-sub", { text: (g.romanization ? "/" + g.romanization + "/  " : "") + g.grid.cols + "×" + g.grid.rows }),
         ]),
       ]);
-      list.appendChild(item);
+    };
+    // group characters by their family, preserving first-seen order; ungrouped first.
+    const order = [], byGroup = {};
+    p.glyphs.forEach((g) => { const k = g.group || ""; if (!(k in byGroup)) { byGroup[k] = []; order.push(k); } byGroup[k].push(g); });
+    order.sort((a, b) => (a === "" ? -1 : b === "" ? 1 : 0)); // ungrouped stays on top
+    order.forEach((k) => {
+      if (k) list.appendChild(U.el("div.glyph-group-head", {}, [U.el("span", { text: k }), U.el("span.gh-count", { text: String(byGroup[k].length) })]));
+      byGroup[k].forEach((g) => list.appendChild(item(g)));
     });
   };
 
@@ -448,6 +455,9 @@
         E.sel.shapes = g.shapes.map((s) => s.id);
         commit();
       }
+      // copy / paste the whole character (skip if the user is selecting text)
+      else if ((e.key === "c" || e.key === "C") && (e.ctrlKey || e.metaKey) && !String(window.getSelection())) { copyGlyph(g); }
+      else if ((e.key === "v" || e.key === "V") && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pasteAsNew(); }
     });
   }
 
@@ -507,7 +517,11 @@
       field(logographic ? "Meaning (word)" : "Meaning", U.el("input", { value: g.meaning, placeholder: logographic ? "e.g. sun" : "optional — for logograms", onInput: (e) => { g.meaning = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
       field("Romanization", U.el("input", { value: g.romanization, placeholder: "optional — a character can be a word on its own", onInput: (e) => { g.romanization = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
       field("Sound / IPA", U.el("input", { value: g.sound, placeholder: "optional", onInput: (e) => { g.sound = e.target.value; Store.touch(); } })),
+      field("Group / family", U.el("input", { value: g.group || "", placeholder: "optional — group related characters", list: "glyphGroups", onInput: (e) => { g.group = e.target.value; Store.touch(); E.renderList(); } })),
     ]);
+    // datalist of existing group names for quick reuse
+    const groups = Array.from(new Set(p.glyphs.map((x) => x.group).filter(Boolean)));
+    idGroup.appendChild(U.el("datalist", { id: "glyphGroups" }, groups.map((gr) => U.el("option", { value: gr }))));
     panel.appendChild(idGroup);
 
     // Words: turn this character into a dictionary word, and auto-word new ones.
@@ -569,10 +583,19 @@
       U.el("label", { style: { display: "flex", gap: "8px", alignItems: "center", fontSize: "12px" } }, [showGrid, "Show grid dots"])]));
 
     // Actions
+    const hasClip = !!loadClip();
     const actions = U.el("div.tool-group", {}, [
+      U.el("h4", { text: "Copy / group" }),
+      U.el("div.tool-btns", {}, [
+        U.el("button.btn.small", { text: "Copy", title: "Copy this character (Ctrl/⌘+C)", onClick: () => copyGlyph(g) }),
+        U.el("button.btn.small" + (hasClip ? "" : ".disabled"), { text: "Paste as new", title: "Create a new character from the copied one (Ctrl/⌘+V)", onClick: () => pasteAsNew() }),
+        U.el("button.btn.small" + (hasClip ? "" : ".disabled"), { text: "Paste into", title: "Overlay the copied character onto this one — a shared starting part", onClick: () => pasteInto(g) }),
+        U.el("button.btn.small", { text: "＋ Variant", title: "Duplicate into the same group so a family shares a starting part", onClick: () => newVariant(g) }),
+        U.el("button.btn.small", { text: "Duplicate", onClick: () => duplicateGlyph(g) }),
+      ]),
+      U.el("h4", { text: "Character", style: { marginTop: "6px" } }),
       U.el("div.tool-btns", {}, [
         U.el("button.btn.small", { text: "Clear strokes", onClick: () => { g.nodes = []; g.connections = []; g.shapes = []; commit(); } }),
-        U.el("button.btn.small", { text: "Duplicate", onClick: () => duplicateGlyph(g) }),
         U.el("button.btn.small", { text: "Export SVG", onClick: () => exportGlyphSVG(g, p) }),
         U.el("button.btn.small.danger", { text: "Delete", onClick: () => deleteGlyph(g) }),
       ]),
@@ -720,14 +743,75 @@
     g.shapes.forEach((s) => { s.c = U.clamp(s.c, 0, g.grid.cols); s.r = U.clamp(s.r, 0, g.grid.rows); });
   }
 
+  // Give a glyph's nodes/connections/shapes fresh ids (keeps wiring intact).
+  function regenIds(glyph) {
+    glyph.nodes.forEach((n) => { const old = n.id; n.id = U.uid("n"); glyph.connections.forEach((c) => { if (c.from === old) c.from = n.id; if (c.to === old) c.to = n.id; }); });
+    glyph.connections.forEach((c) => (c.id = U.uid("c")));
+    glyph.shapes.forEach((s) => (s.id = U.uid("s")));
+    return glyph;
+  }
+
   function duplicateGlyph(g) {
     const p = project();
-    const copy = U.clone(g);
+    const copy = regenIds(U.clone(g));
     copy.id = U.uid("gly"); copy.name = g.name + " copy";
-    copy.nodes.forEach((n) => { const old = n.id; n.id = U.uid("n"); copy.connections.forEach((c) => { if (c.from === old) c.from = n.id; if (c.to === old) c.to = n.id; }); });
-    copy.connections.forEach((c) => (c.id = U.uid("c")));
-    copy.shapes.forEach((s) => (s.id = U.uid("s")));
-    p.glyphs.push(copy); Store.touch(); E.open(copy.id);
+    p.glyphs.push(copy);
+    if (window.Lexicon) Lexicon.autoWordForGlyph(copy);
+    Store.touch(); E.open(copy.id);
+  }
+
+  /* ---------- Copy / paste characters (persists across projects) ---------- */
+  const CLIP_KEY = "language-builder:glyphclip";
+  E.clip = null;
+  function loadClip() {
+    if (E.clip) return E.clip;
+    try { const s = localStorage.getItem(CLIP_KEY); if (s) E.clip = JSON.parse(s); } catch (e) {}
+    return E.clip;
+  }
+  function copyGlyph(g) {
+    E.clip = { name: g.name, romanization: g.romanization, meaning: g.meaning, group: g.group || "", grid: U.clone(g.grid), nodes: U.clone(g.nodes), connections: U.clone(g.connections), shapes: U.clone(g.shapes) };
+    try { localStorage.setItem(CLIP_KEY, JSON.stringify(E.clip)); } catch (e) {}
+    U.toast("Copied “" + (g.name || "character") + "”");
+    E.renderWorkspace(); // reflect that paste is now available
+  }
+  function pasteAsNew() {
+    const clip = loadClip(); if (!clip) { U.toast("Nothing copied yet.", true); return; }
+    const p = project(); if (!p) return;
+    const g = regenIds({
+      id: U.uid("gly"), name: (clip.name || "glyph") + " copy", romanization: clip.romanization || "", sound: "",
+      meaning: clip.meaning || "", group: clip.group || "", grid: U.clone(clip.grid || p.defaultGrid),
+      nodes: U.clone(clip.nodes || []), connections: U.clone(clip.connections || []), shapes: U.clone(clip.shapes || []),
+    });
+    p.glyphs.push(g);
+    if (window.Lexicon) Lexicon.autoWordForGlyph(g);
+    Store.touch(); E.open(g.id);
+    U.toast("Pasted as a new character");
+  }
+  // Overlay the copied character's strokes onto the current one — this is how a
+  // family shares the same starting part.
+  function pasteInto(g) {
+    const clip = loadClip(); if (!clip) { U.toast("Nothing copied yet.", true); return; }
+    const idmap = {};
+    (clip.nodes || []).forEach((n) => { const id = U.uid("n"); idmap[n.id] = id; g.nodes.push({ id, c: U.clamp(n.c, 0, g.grid.cols), r: U.clamp(n.r, 0, g.grid.rows) }); });
+    (clip.connections || []).forEach((c) => { if (idmap[c.from] && idmap[c.to]) g.connections.push({ id: U.uid("c"), from: idmap[c.from], to: idmap[c.to], type: c.type, curve: c.curve }); });
+    (clip.shapes || []).forEach((s) => { g.shapes.push(Object.assign(U.clone(s), { id: U.uid("s"), c: U.clamp(s.c, 0, g.grid.cols), r: U.clamp(s.r, 0, g.grid.rows) })); });
+    if (window.Lexicon) Lexicon.syncWordFromGlyph(g);
+    commit();
+    U.toast("Pasted “" + (clip.name || "base") + "” onto this character");
+  }
+  // Duplicate into the same group so related characters share a starting part.
+  function newVariant(g) {
+    const p = project();
+    const grp = g.group || g.name || "family";
+    if (!g.group) { g.group = grp; } // promote this character into a named group
+    const copy = regenIds(U.clone(g));
+    copy.id = U.uid("gly"); copy.group = grp;
+    const n = p.glyphs.filter((x) => (x.group || "") === grp).length + 1;
+    copy.name = grp + " " + n;
+    p.glyphs.push(copy);
+    if (window.Lexicon) Lexicon.autoWordForGlyph(copy);
+    Store.touch(); E.open(copy.id);
+    U.toast("New variant in group “" + grp + "”");
   }
 
   function deleteGlyph(g) {

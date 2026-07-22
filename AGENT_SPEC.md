@@ -186,6 +186,14 @@ coordinate in `onDown` — **preserve this invariant** if you refactor.
     control survives) and `commit()` on release.
 - **Toolbelt** is icon-based: inline `ICONS` map + `icon()` / `iconBtn()`
   helpers; connection styles use a 2×2 "split-square" quad.
+- **Copy / paste & groups.** Glyphs carry an optional `group` (family name).
+  `copyGlyph` stores a drawing to `E.clip` + `localStorage["…:glyphclip"]` (so it
+  survives across projects); `pasteAsNew` makes a fresh character from it,
+  `pasteInto` overlays the clip's nodes/connections/shapes onto the current glyph
+  (shared starting part), and `newVariant` duplicates into the same `group`.
+  `regenIds(glyph)` gives copied drawings fresh ids. Ctrl/⌘+C / +V map to copy /
+  paste-as-new in `bindKeys` (skipped while text is selected). `renderList`
+  buckets characters by `group` under `.glyph-group-head` headers.
 
 `commit()` = `Store.touch()` + re-render workspace + list thumbnail.
 `redrawCanvas()` = rebuild only the SVG (used by live sliders/drags).

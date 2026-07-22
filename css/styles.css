@@ -545,3 +545,14 @@ label.field { gap: 3px; }
 .sym-plus { color: var(--text-mute); font-size: 20px; line-height: 1; }
 .sym-current { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 44px; padding: 8px; background: var(--bg-3); border: 1px solid var(--line); border-radius: var(--radius-sm); }
 .sym-picker-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow: auto; }
+
+/* ---------- Character groups / families ---------- */
+.glyph-group-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 8px 4px; margin-top: 4px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-mute); border-top: 1px solid var(--line);
+}
+.glyph-group-head:first-child { border-top: 0; margin-top: 0; }
+.gh-count { font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 0 7px; }
+.btn.disabled { opacity: .45; pointer-events: none; }
