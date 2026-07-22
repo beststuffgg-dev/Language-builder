@@ -317,15 +317,20 @@
       title: isNew ? "Add word" : "Edit word",
       wide: true,
       body: [
-        U.el("div.row", { style: { alignItems: "flex-end" } }, [U.el("label.field", { style: { flex: "1" } }, ["Word", headIn]), nameFromChars]),
-        U.el("div.field", {}, [U.el("span", { text: "Part of speech (choose any that apply)", style: { fontSize: "12px", color: "var(--text-dim)" } }), posChips.el]),
-        U.el("div.field", {}, [U.el("span", { text: "Gender / class", style: { fontSize: "12px", color: "var(--text-dim)" } }), genderBody]),
-        U.el("div.field", {}, [U.el("span", { text: "Translations / meaning", style: { fontSize: "12px", color: "var(--text-dim)" } }), U.el("div.row", {}, transFields)]),
-        combineRow,
-        U.el("label.field", {}, ["Tags", tagsIn]),
-        U.el("label.field", {}, [logographic ? "Characters (each a logogram)" : "Spelling (glyphs)", seqPreview]),
-        U.el("div.field", {}, [U.el("span", { text: "Add characters:", style: { fontSize: "12px", color: "var(--text-dim)" } }), palette]),
-        U.el("div.field", {}, [U.el("span", { text: "Word parts (compose from other words)", style: { fontSize: "12px", color: "var(--text-dim)" } }), partsPreview, U.el("div.row", { style: { alignItems: "center" } }, [partPicker, buildFromParts])]),
+        U.el("div.modal-grid2", {}, [
+          U.el("div.mcol", {}, [
+            U.el("div.row", { style: { alignItems: "flex-end" } }, [U.el("label.field", { style: { flex: "1" } }, ["Word", headIn]), nameFromChars]),
+            U.el("div.field", {}, [U.el("span.flabel", { text: "Part of speech" }), posChips.el]),
+            U.el("div.field", {}, [U.el("span.flabel", { text: "Gender / class" }), genderBody]),
+            U.el("label.field", {}, ["Tags", tagsIn]),
+          ]),
+          U.el("div.mcol", {}, [
+            U.el("div.field", {}, [U.el("span.flabel", { text: "Translations / meaning" }), U.el("div.row", {}, transFields), combineRow]),
+            U.el("div.field", {}, [U.el("span.flabel", { text: logographic ? "Characters (each a logogram)" : "Spelling (glyphs)" }), seqPreview,
+              U.el("details.mini-details", {}, [U.el("summary", { text: "Add characters" }), palette])]),
+            U.el("div.field", {}, [U.el("span.flabel", { text: "Word parts (compose from other words)" }), partsPreview, U.el("div.row", { style: { alignItems: "center" } }, [partPicker, buildFromParts])]),
+          ]),
+        ]),
       ],
       confirmText: isNew ? "Add" : "Save",
       onConfirm: () => {
