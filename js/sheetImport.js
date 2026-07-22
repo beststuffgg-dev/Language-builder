@@ -45,14 +45,18 @@
     const H = S.headers.map((h) => (h || "").toLowerCase());
     const find = (keys) => { for (let i = 0; i < H.length; i++) if (keys.some((k) => H[i].includes(k))) return i; return -1; };
     S.map = {
+      symbol: find(["symbol", "character", "glyph", "char", "sign", "logogram", "emoji", "picture"]),
       word: find(["word", "headword", "term", "spelling", "conlang", "native", "romaniz"]),
       meaning: find(["meaning", "definition", "translation", "english", "gloss", "sense"]),
+      group: find(["group", "family", "category", "set", "type", "class"]),
       pos: find(["part of speech", "part-of-speech", "pos", "word class", "wordclass"]),
-      gender: find(["gender", "class", "declension"]),
-      tags: find(["tag", "note", "category"]),
+      gender: find(["gender", "declension"]),
+      tags: find(["tag", "note"]),
     };
-    if (S.map.word < 0) S.map.word = 0;
-    if (S.map.meaning < 0 && S.headers.length > 1) S.map.meaning = S.map.word === 1 ? 0 : 1;
+    if (S.map.word < 0 && S.map.symbol < 0) S.map.word = 0;
+    if (S.map.meaning < 0) { for (let i = 0; i < S.headers.length; i++) if (i !== S.map.word && i !== S.map.symbol && i !== S.map.group) { S.map.meaning = i; break; } }
+    // If there's a symbol column, default to building a language of characters.
+    S.mode = S.map.symbol >= 0 ? "chars" : "words";
   }
 
   function dataRows() { return S.hasHeader ? S.rows.slice(1) : S.rows; }
@@ -67,9 +71,10 @@
     S.items = dataRows().map((r) => {
       const headword = cell(r, S.map.word), meaning = cell(r, S.map.meaning);
       const tagsRaw = cell(r, S.map.tags);
+      const symbol = cell(r, S.map.symbol), group = cell(r, S.map.group);
       return {
-        include: !!(headword || meaning),
-        headword, meaning,
+        include: !!(headword || meaning || symbol),
+        headword, meaning, symbol, group,
         posList: matchOptions(cell(r, S.map.pos), p.partsOfSpeech),
         genderList: matchOptions(cell(r, S.map.gender), p.genders),
         tags: tagsRaw ? tagsRaw.split(/[;,]/).map((s) => s.trim()).filter(Boolean) : [],
@@ -112,7 +117,8 @@
 
     if (!S.ready) { renderInput(root); return; }
     renderMapping(root);
-    renderReview(root);
+    if (S.mode === "chars") renderCharsReview(root);
+    else renderReview(root);
   };
 
   function renderInput(root) {
@@ -124,7 +130,7 @@
     } });
     const paste = U.el("textarea", { rows: 8, placeholder: "…or paste rows copied straight from Excel / Google Sheets here (tabs or commas both work).", style: { width: "100%" } });
     root.appendChild(U.el("div.card", {}, [
-      U.el("p.muted", { text: "Import words in bulk. Upload a .csv / .tsv file, or paste cells you copied from a spreadsheet. You’ll map the columns and review every word — assigning categories and a symbol — before anything is added." }),
+      U.el("p.muted", { text: "Import in bulk. Upload a .csv / .tsv file, or paste cells copied from a spreadsheet. If a column holds the symbols (emoji, characters, signs), each row becomes a character in your language — with its meaning and group — so a sheet of symbols + meanings + groups turns straight into a working script and dictionary. Otherwise each row is added as a word. You map the columns and review everything first." }),
       U.el("div.inline-actions", {}, [
         U.el("button.btn.primary", { text: "📄  Choose CSV / TSV file", onClick: () => fileIn.click() }),
         fileIn,
@@ -150,12 +156,21 @@
       S.headers = S.hasHeader ? S.rows[0].map((h) => String(h).trim()) : S.rows[0].map((_, i) => "Column " + (i + 1));
       buildItems(); S.render();
     } });
+    const modeSeg = U.el("div.seg", {}, [
+      U.el("button.btn.small" + (S.mode === "chars" ? ".active" : ""), { type: "button", text: "Build characters (a language)", onClick: () => { S.mode = "chars"; S.render(); } }),
+      U.el("button.btn.small" + (S.mode === "words" ? ".active" : ""), { type: "button", text: "Add words", onClick: () => { S.mode = "words"; S.render(); } }),
+    ]);
     root.appendChild(U.el("div.card", {}, [
+      U.el("div", { style: { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", marginBottom: "10px" } }, [
+        U.el("span.flabel", { text: "Each row is a…" }), modeSeg,
+        U.el("span.hint", { text: S.mode === "chars" ? "→ a character (symbol + meaning + group) becomes part of your language" : "→ a dictionary word spelled from existing characters" }),
+      ]),
       U.el("div.sheet-map", {}, [
-        U.el("label.field", {}, ["Word", colSelect("word", false)]),
+        S.mode === "chars" ? U.el("label.field", {}, ["Symbol", colSelect("symbol", true)]) : U.el("label.field", {}, ["Word", colSelect("word", false)]),
         U.el("label.field", {}, ["Meaning", colSelect("meaning", true)]),
+        U.el("label.field", {}, ["Group / family", colSelect("group", true)]),
         U.el("label.field", {}, ["Part of speech", colSelect("pos", true)]),
-        U.el("label.field", {}, ["Gender / class", colSelect("gender", true)]),
+        U.el("label.field", {}, [S.mode === "chars" ? "Word (romanization)" : "Gender / class", colSelect(S.mode === "chars" ? "word" : "gender", true)]),
         U.el("label.field", {}, ["Tags", colSelect("tags", true)]),
       ]),
       U.el("label", { style: { display: "flex", gap: "8px", alignItems: "center", fontSize: "12px", marginTop: "8px" } }, [hdrChk, "First row is a header"]),
@@ -196,6 +211,74 @@
     });
     table.appendChild(tbody);
     root.appendChild(table);
+  }
+
+  /* ---------- Characters mode: build a language from symbol+meaning+group ---------- */
+  function renderCharsReview(root) {
+    const p = project();
+    const count = () => S.items.filter((it) => it.include).length;
+    const logoChk = U.el("input", { type: "checkbox", checked: S.logographic !== false, onChange: (e) => { S.logographic = e.target.checked; } });
+
+    const bar = U.el("div", { style: { display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px", flexWrap: "wrap" } }, [
+      U.el("span.hint", { text: S.items.length + " rows · " + count() + " characters", style: { flex: "1" } }),
+      U.el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12px" } }, [logoChk, "Logographic (1 character = 1 word)"]),
+      U.el("button.btn.primary", { text: "Build language (" + count() + ")", onClick: doImportChars }),
+    ]);
+    root.appendChild(bar);
+
+    const groupsSeen = Array.from(new Set(S.items.map((it) => it.group).filter(Boolean)));
+    const dl = U.el("datalist", { id: "sheetGroups" }, groupsSeen.map((g) => U.el("option", { value: g })));
+    root.appendChild(dl);
+
+    const table = U.el("table.lex.sheet-table");
+    table.appendChild(U.el("thead", {}, [U.el("tr", {}, [
+      U.el("th", { text: "" }), U.el("th", { text: "Symbol" }), U.el("th", { text: "Meaning" }), U.el("th", { text: "Word" }), U.el("th", { text: "Group" }),
+    ])]));
+    const tbody = U.el("tbody");
+    S.items.forEach((item) => {
+      const inc = U.el("input", { type: "checkbox", checked: item.include, onChange: (e) => { item.include = e.target.checked; } });
+      const preview = U.el("div.sym-slot", { style: { cursor: "default" } });
+      const drawPrev = () => { U.clear(preview); preview.appendChild(GlyphRender.render({ grid: p.defaultGrid, nodes: [], connections: [], shapes: [], text: item.symbol || "" }, { size: 34, style: p.style, strokeWidth: 3 })); };
+      drawPrev();
+      const symIn = U.el("input", { value: item.symbol, style: { width: "64px" }, title: "the symbol shown for this character", onInput: (e) => { item.symbol = e.target.value; drawPrev(); } });
+      const meanIn = U.el("input", { value: item.meaning, style: { minWidth: "120px" }, onInput: (e) => { item.meaning = e.target.value; } });
+      const wordIn = U.el("input", { value: item.headword, placeholder: "optional", style: { minWidth: "90px" }, onInput: (e) => { item.headword = e.target.value; } });
+      const groupIn = U.el("input", { value: item.group, list: "sheetGroups", placeholder: "optional", style: { minWidth: "100px" }, onInput: (e) => { item.group = e.target.value; } });
+      tbody.appendChild(U.el("tr", {}, [
+        U.el("td", {}, [inc]),
+        U.el("td", {}, [U.el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [preview, symIn])]),
+        U.el("td", {}, [meanIn]),
+        U.el("td", {}, [wordIn]),
+        U.el("td", {}, [groupIn]),
+      ]));
+    });
+    table.appendChild(tbody);
+    root.appendChild(table);
+  }
+
+  function doImportChars() {
+    const p = project();
+    let n = 0;
+    S.items.forEach((item) => {
+      if (!item.include) return;
+      const meaning = (item.meaning || "").trim();
+      const symbol = (item.symbol || "").trim();
+      if (!meaning && !symbol) return;
+      const g = {
+        id: U.uid("gly"),
+        name: meaning || symbol || "symbol",
+        romanization: (item.headword || "").trim(),
+        sound: "", meaning, group: (item.group || "").trim(), text: symbol,
+        grid: U.clone(p.defaultGrid), nodes: [], connections: [], shapes: [],
+      };
+      p.glyphs.push(g);
+      if (window.Lexicon) Lexicon.wordFromGlyph(g); // each character is also a word
+      n++;
+    });
+    if (S.logographic !== false && n) p.writingSystem = "logographic";
+    Store.touch();
+    U.toast("Built " + n + " character" + (n === 1 ? "" : "s") + " into your language");
+    App.switchTab("glyphs");
   }
 
   function drawSlot(slot, item) {

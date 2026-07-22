@@ -95,6 +95,8 @@ Theme is separate: `localStorage["language-builder:theme"]`.
 {
   id, name, romanization, sound,
   meaning,                         // logographic gloss; also what a character-word means
+  group,                           // optional family name (sidebar grouping, shared base)
+  text,                            // optional literal symbol/emoji rendered as the character
   grid: { cols, rows },
   nodes: [{ id, c, r }],           // c,r are grid coords; MAY BE FRACTIONAL (see §4)
   connections: [{ id, from, to, type, curve }], // type: direct|curved|diagonal|ortho
@@ -330,6 +332,18 @@ Bulk-add dictionary words from a spreadsheet, opened from the Dictionary header
    (seeded with its romanization/meaning, pushed to `project.glyphs`).
 5. **Import**: each included item becomes an `Entry` (headword falling back to
    `Lexicon.nameFromGlyphs` or the meaning), tagged `imported`.
+
+**Two modes** (`S.mode`), auto-selected by `guessMap`: if a **symbol** column is
+mapped it defaults to **"chars"** (build a language), else **"words"** (the flow
+above). In chars mode the extra columns are **symbol** and **group**; each row
+becomes a **character** — a glyph with `text` = the symbol, plus `meaning` and
+`group` — and a linked dictionary word (`Lexicon.wordFromGlyph`). Optionally sets
+`writingSystem = "logographic"`. So a sheet of *symbols + meanings + groups*
+turns straight into a script + dictionary.
+
+**Text glyphs.** A glyph may carry a literal `text` (emoji/character); `R.render`
+draws it centered and scaled to the box (beneath any strokes). This is how
+imported symbols display without being redrawn as strokes.
 
 ---
 

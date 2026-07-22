@@ -116,11 +116,16 @@ your API, and the rest of the app is unchanged.
 - **Compose words from other words** too — parts are themselves words, swappable
   later. (Also available inside rules via the *Word (lookup)* node.)
 - **Import a spreadsheet** (⤓ Import sheet) — upload a CSV/TSV or paste cells
-  copied from Excel / Google Sheets. Map the columns, then review every word in a
-  grid: **click the category toggles**, let it **auto-assign the characters** that
-  spell each word (matched from your existing glyphs), and **click the little
-  symbol box** next to any word to pick or make a character for it — then import
-  them all at once.
+  copied from Excel / Google Sheets. Two modes:
+  - **Build a language** — if a column holds the **symbols** (emoji, characters,
+    signs), each row becomes a **character** with its **meaning** and **group**,
+    plus a matching dictionary word. Drop in a sheet of *symbols + meanings +
+    groups* and it turns straight into a working script and dictionary — then you
+    only have to add conjugation and grammar.
+  - **Add words** — review every word in a grid: **click the category toggles**,
+    let it **auto-assign the characters** that spell each word (matched from your
+    existing glyphs), and **click the little symbol box** to pick or make a
+    character for it.
 - Search/filter and **export to CSV**.
 - Parts of speech and genders are fully configurable per language.
 
