@@ -103,6 +103,9 @@
       pos: posList[0] || "",     // kept for compatibility (first category)
       genderList: genderList,
       gender: genderList[0] || "",
+      // gender may be *variable*: inherited from another word (agreement).
+      genderMode: e.genderMode === "variable" ? "variable" : "fixed",
+      genderFrom: e.genderFrom || null, // wordId this word takes its gender from
       tags: e.tags || [],
       glyphSeq: e.glyphSeq || [],
       parts: e.parts || [], // other word ids this word is composed of (compounds/morphemes)

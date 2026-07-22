@@ -484,3 +484,12 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .snap-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .snap-controls > *:nth-child(4) { grid-column: 1 / -1; }
 .snap-fields { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- Segmented control (e.g. fixed vs variable gender) ---------- */
+.seg { display: inline-flex; gap: 0; border: 1px solid var(--line-2); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-3); }
+.seg .btn { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.seg .btn + .btn { border-left: 1px solid var(--line); }
+.seg .btn:hover { transform: none; background: var(--panel-2); }
+.seg .btn.active { background: var(--grad-accent); color: var(--accent-ink); }
+/* inherited-gender marker in the dictionary table */
+.gender-var { display: inline-block; margin-left: 4px; font-size: 11px; color: var(--accent); font-style: italic; }

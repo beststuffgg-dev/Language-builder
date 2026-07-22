@@ -112,6 +112,8 @@ inscribed in the `(c,r,w,h)` grid box. Legacy `{c,r,size}` shapes migrate in
   definition,                      // = translations[firstLang], kept for compat
   posList: [string], pos,          // MULTI-category; pos = posList[0] (compat)
   genderList: [string], gender,    // MULTI-category; gender = genderList[0] (compat)
+  genderMode: "fixed"|"variable",  // "variable" = inherit gender from another word
+  genderFrom: wordId | null,       // the word this one agrees with (when variable)
   tags: [string],
   glyphSeq: [glyphId],             // how the word is written, in your characters
   parts: [wordId],                 // compose a word from other words (compounds)
@@ -198,6 +200,13 @@ This is the part most recently extended — implement it carefully.
   `{ el, get() }`. A word can be several parts of speech at once. Table, filter,
   CSV and Learn all read the list (`posOf(e)` / `genderOf(e)` fall back to the
   legacy singular).
+- **Variable gender (agreement):** a word's gender/class can be **fixed** or
+  **variable** (`genderMode`). When variable, it inherits its gender from another
+  word (`genderFrom` = that word's id). `L.effectiveGender(e)` resolves it,
+  following the reference recursively **with a cycle guard**; change the source
+  word and every dependent follows. The editor offers a Fixed / "Varies · agrees
+  with a word" segmented toggle (`.seg`); the table shows a "↳ headword" marker.
+  Everything that displays gender goes through `effectiveGender`.
 - **Characters can be words** (no romanization required):
   - `headword` is optional. On save, if blank it is derived via
     `L.nameFromGlyphs(glyphSeq)` (join characters' romanizations, else meanings),

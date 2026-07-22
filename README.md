@@ -95,6 +95,10 @@ your API, and the rest of the app is unchanged.
 - Words with **meaning, tags, and multiple categories** — part of speech and
   gender/class are **toggles**, so a word can be several things at once (e.g. both
   noun *and* verb).
+- **Variable gender/class** — a word's gender can be **fixed**, or set to **vary
+  based on another word** (agreement): pick the word it follows in the editor, and
+  it inherits that word's gender automatically (updates live when the source
+  changes).
 - **Translations in any number of natural languages** (add your own).
 - **A character can be a word on its own** — no romanization required. Leave the
   word blank and it's named after its characters, or hit **“Make this character a

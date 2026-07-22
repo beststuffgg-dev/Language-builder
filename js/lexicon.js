@@ -7,7 +7,34 @@
   // A word may belong to several categories at once. posList/genderList are the
   // source of truth; fall back to the legacy single field for old data.
   function posOf(e) { return (e.posList && e.posList.length ? e.posList : (e.pos ? [e.pos] : [])); }
-  function genderOf(e) { return (e.genderList && e.genderList.length ? e.genderList : (e.gender ? [e.gender] : [])); }
+  // A word's own (fixed) gender/class list.
+  function ownGender(e) { return (e.genderList && e.genderList.length ? e.genderList : (e.gender ? [e.gender] : [])); }
+  // The effective gender, following a "variable" word's reference to whatever word
+  // it agrees with (recursively, with a cycle guard).
+  L.effectiveGender = function (e, _seen) {
+    const p = project();
+    if (!e) return [];
+    if (e.genderMode === "variable" && e.genderFrom) {
+      _seen = _seen || new Set();
+      if (_seen.has(e.id)) return []; // cycle — bail out
+      _seen.add(e.id);
+      const src = p.lexicon.find((x) => x.id === e.genderFrom);
+      return src ? L.effectiveGender(src, _seen) : [];
+    }
+    return ownGender(e);
+  };
+  function genderOf(e) { return L.effectiveGender(e); }
+  // Table cell for gender: resolved value(s), with a marker when it's inherited.
+  function genderCell(e) {
+    const p = project();
+    const vals = genderOf(e);
+    const nodes = vals.length ? vals.map((x) => U.el("span.tag", { text: x })) : [U.el("span", { text: "—" })];
+    if (e.genderMode === "variable") {
+      const src = e.genderFrom && p.lexicon.find((x) => x.id === e.genderFrom);
+      nodes.push(U.el("span.gender-var", { title: src ? "agrees with “" + src.headword + "”" : "variable gender", text: "↳ " + (src ? src.headword : "?") }));
+    }
+    return nodes;
+  }
 
   // Toggle-chip multi-select. Returns { el, get() }.
   function multiChips(options, selected, opts) {
@@ -157,7 +184,7 @@
         U.el("td", {}, [U.el("strong", { text: e.headword })]),
         U.el("td", {}, [L.renderGlyphSeq(e.glyphSeq, 34)]),
         U.el("td", {}, posOf(e).length ? posOf(e).map((x) => U.el("span.tag", { text: x })) : [U.el("span", { text: "—" })]),
-        U.el("td", {}, genderOf(e).length ? genderOf(e).map((x) => U.el("span.tag", { text: x })) : [U.el("span", { text: "—" })]),
+        U.el("td", {}, genderCell(e)),
         U.el("td", { text: e.definition || "" }),
         U.el("td", {}, (e.tags || []).map((t) => U.el("span.tag", { text: t }))),
         U.el("td", {}, [U.el("div.inline-actions", {}, [
@@ -195,8 +222,31 @@
     });
     // Multi-category pickers: a word can be several parts of speech / classes at once.
     const posChips = multiChips(p.partsOfSpeech, posOf(e), { empty: "no parts of speech defined" });
-    const genChips = multiChips(p.genders, genderOf(e), { empty: "no genders/classes defined" });
     const tagsIn = U.el("input", { value: (e.tags || []).join(", "), placeholder: "comma, separated, tags" });
+
+    // Gender / class: either a fixed set, or *variable* — inherited from another
+    // word (agreement). The editor lets you pick which.
+    let genderMode = e.genderMode === "variable" ? "variable" : "fixed";
+    let genderFrom = e.genderFrom || null;
+    const genChips = multiChips(p.genders, ownGender(e), { empty: "no genders/classes defined" });
+    const genFromSel = U.el("select", { onChange: (ev) => { genderFrom = ev.target.value || null; } });
+    genFromSel.appendChild(U.el("option", { value: "", text: "— pick a word —" }));
+    p.lexicon.filter((x) => x.id !== e.id).forEach((w) => genFromSel.appendChild(U.el("option", { value: w.id, text: w.headword + (w.definition ? " (" + w.definition + ")" : ""), selected: w.id === genderFrom })));
+    const genderBody = U.el("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } });
+    const drawGender = () => {
+      U.clear(genderBody);
+      genderBody.appendChild(U.el("div.seg", {}, [
+        U.el("button.btn.small" + (genderMode === "fixed" ? ".active" : ""), { type: "button", text: "Fixed", onClick: () => { genderMode = "fixed"; drawGender(); } }),
+        U.el("button.btn.small" + (genderMode === "variable" ? ".active" : ""), { type: "button", text: "Varies · agrees with a word", onClick: () => { genderMode = "variable"; drawGender(); } }),
+      ]));
+      if (genderMode === "fixed") {
+        genderBody.appendChild(genChips.el);
+      } else {
+        genderBody.appendChild(genFromSel);
+        genderBody.appendChild(U.el("div.hint", { text: "This word takes its gender/class from the chosen word — change that word and this one follows automatically." }));
+      }
+    };
+    drawGender();
 
     // Glyph sequence builder
     const seqPreview = U.el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "44px", padding: "8px", background: "var(--bg-3)", border: "1px solid var(--line)", borderRadius: "6px", alignItems: "center" } });
@@ -269,7 +319,7 @@
       body: [
         U.el("div.row", { style: { alignItems: "flex-end" } }, [U.el("label.field", { style: { flex: "1" } }, ["Word", headIn]), nameFromChars]),
         U.el("div.field", {}, [U.el("span", { text: "Part of speech (choose any that apply)", style: { fontSize: "12px", color: "var(--text-dim)" } }), posChips.el]),
-        U.el("div.field", {}, [U.el("span", { text: "Gender / class (choose any that apply)", style: { fontSize: "12px", color: "var(--text-dim)" } }), genChips.el]),
+        U.el("div.field", {}, [U.el("span", { text: "Gender / class", style: { fontSize: "12px", color: "var(--text-dim)" } }), genderBody]),
         U.el("div.field", {}, [U.el("span", { text: "Translations / meaning", style: { fontSize: "12px", color: "var(--text-dim)" } }), U.el("div.row", {}, transFields)]),
         combineRow,
         U.el("label.field", {}, ["Tags", tagsIn]),
@@ -286,7 +336,10 @@
         e.headword = headIn.value.trim() || L.nameFromGlyphs(e.glyphSeq) || e.definition;
         if (!e.headword) { U.toast("Add a word, a meaning, or some characters.", true); return false; }
         e.posList = posChips.get(); e.pos = e.posList[0] || "";
-        e.genderList = genChips.get(); e.gender = e.genderList[0] || "";
+        e.genderMode = genderMode;
+        e.genderFrom = genderMode === "variable" ? genderFrom : null;
+        e.genderList = genderMode === "fixed" ? genChips.get() : [];
+        e.gender = e.genderList[0] || "";
         e.tags = tagsIn.value.split(",").map((s) => s.trim()).filter(Boolean);
         if (isNew) p.lexicon.push(e);
         else { const idx = p.lexicon.findIndex((x) => x.id === e.id); if (idx >= 0) p.lexicon[idx] = e; }
