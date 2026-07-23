@@ -455,3 +455,104 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- Chips (multi-select categories) ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  background: var(--panel-2); color: var(--text-dim);
+  border: 1px solid var(--line-2); border-radius: 999px;
+  padding: 4px 11px; font-size: 12px; cursor: pointer; line-height: 1;
+  transition: background .14s, border-color .14s, color .14s, transform .06s;
+}
+.chip:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
+.chip.on { background: var(--grad-accent); border-color: transparent; color: var(--accent-ink); font-weight: 600; box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 32%, transparent); }
+.chip.on::before { content: "✓ "; }
+
+/* ---------- Snap (photo import) ---------- */
+.snap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.snap-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  padding: 14px; display: flex; flex-direction: column; gap: 12px;
+  box-shadow: var(--shadow); background-image: var(--grad-panel);
+}
+.snap-previews { display: flex; align-items: center; gap: 10px; justify-content: center; }
+.snap-photo { width: 130px; height: 150px; flex: none; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line-2); background: var(--bg-3); display: flex; align-items: center; justify-content: center; }
+.snap-photo img { width: 100%; height: 100%; object-fit: cover; }
+.snap-arrow { color: var(--text-mute); font-size: 22px; flex: none; }
+.snap-glyph { width: 150px; height: 150px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg-3); overflow: hidden; }
+.snap-glyph svg { max-width: 100%; max-height: 100%; }
+.snap-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.snap-controls > *:nth-child(4) { grid-column: 1 / -1; }
+.snap-fields { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- Segmented control (e.g. fixed vs variable gender) ---------- */
+.seg { display: inline-flex; gap: 0; border: 1px solid var(--line-2); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-3); }
+.seg .btn { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.seg .btn + .btn { border-left: 1px solid var(--line); }
+.seg .btn:hover { transform: none; background: var(--panel-2); }
+.seg .btn.active { background: var(--grad-accent); color: var(--accent-ink); }
+/* inherited-gender marker in the dictionary table */
+.gender-var { display: inline-block; margin-left: 4px; font-size: 11px; color: var(--accent); font-style: italic; }
+
+/* ==========================================================================
+   Compact menus — density pass (keeps every control, less whitespace)
+   ========================================================================== */
+.modal { padding: 16px; }
+.modal h3 { margin-bottom: 10px; }
+.modal.wide { width: min(780px, 95vw); }
+.modal .form-col { gap: 10px; }
+.modal .actions { margin-top: 12px; }
+
+/* two-column modal body */
+.modal-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.modal-grid2 .mcol { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+@media (max-width: 640px) { .modal-grid2 { grid-template-columns: 1fr; gap: 10px; } }
+
+.flabel { font-size: 12px; color: var(--text-dim); }
+label.field { gap: 3px; }
+
+/* collapsible sub-sections keep features without the vertical bulk */
+.mini-details > summary { font-size: 12px; color: var(--accent); cursor: pointer; list-style: none; padding: 3px 0; user-select: none; }
+.mini-details > summary::-webkit-details-marker { display: none; }
+.mini-details > summary::before { content: "▸ "; }
+.mini-details[open] > summary::before { content: "▾ "; }
+.mini-details[open] > summary { margin-bottom: 6px; }
+
+/* tighter tool panels, cards and chips */
+.glyph-tools { gap: 9px; padding: 10px; }
+.tool-group { gap: 6px; }
+.tool-group h4 { letter-spacing: .5px; }
+.card { padding: 14px; margin-bottom: 12px; }
+.card h2 { margin-bottom: 2px; }
+.row { gap: 10px; }
+.chips { gap: 5px; }
+.iconbtn { padding: 7px 5px; gap: 3px; }
+.snap-card { padding: 12px; gap: 10px; }
+.snap-controls { gap: 8px; }
+.snap-fields { gap: 8px; }
+
+/* ---------- Spreadsheet import ---------- */
+.sheet-map { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.sheet-table td { vertical-align: middle; }
+.sheet-table .chips { gap: 4px; }
+.sheet-table .chip { padding: 2px 8px; font-size: 11px; }
+.sym-slot {
+  display: inline-flex; align-items: center; gap: 4px; min-width: 46px; min-height: 40px;
+  padding: 3px 6px; border: 1px dashed var(--line-2); border-radius: var(--radius-sm);
+  background: var(--bg-3); cursor: pointer; transition: border-color .14s, background .14s;
+}
+.sym-slot:hover { border-color: var(--accent); background: var(--panel-2); }
+.sym-plus { color: var(--text-mute); font-size: 20px; line-height: 1; }
+.sym-current { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 44px; padding: 8px; background: var(--bg-3); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.sym-picker-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow: auto; }
+
+/* ---------- Character groups / families ---------- */
+.glyph-group-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 8px 4px; margin-top: 4px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-mute); border-top: 1px solid var(--line);
+}
+.glyph-group-head:first-child { border-top: 0; margin-top: 0; }
+.gh-count { font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 0 7px; }
+.btn.disabled { opacity: .45; pointer-events: none; }

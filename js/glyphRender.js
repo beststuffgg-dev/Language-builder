@@ -112,6 +112,16 @@
       }
     }
 
+    // text/emoji symbol (e.g. imported from a spreadsheet) — drawn centered,
+    // scaled to the box, beneath any strokes you add on top of it.
+    if (glyph.text) {
+      const fs = Math.min(w, h) * (glyph.text.length > 1 ? 0.55 : 0.82);
+      svg.appendChild(U.svg("text", {
+        x: box.x + w / 2, y: box.y + h / 2, "text-anchor": "middle", "dominant-baseline": "central",
+        "font-size": fs, fill: stroke, "font-family": "system-ui, 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif",
+      }, glyph.text));
+    }
+
     // shapes (drawn beneath strokes)
     (glyph.shapes || []).forEach((s) => svg.appendChild(R.shapeElement(s, proj, stroke, sw)));
 

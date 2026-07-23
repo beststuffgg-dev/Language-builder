@@ -83,7 +83,7 @@
     // opts: { title, body(node), onConfirm()->bool, confirmText, cancelText, wide }
     const root = document.getElementById("modalRoot");
     U.clear(root);
-    const box = U.el("div.modal");
+    const box = U.el("div.modal" + (opts.wide ? ".wide" : ""));
     box.appendChild(U.el("h3", { text: opts.title || "" }));
     const bodyWrap = U.el("div.form-col");
     if (opts.body) U.append(bodyWrap, opts.body);

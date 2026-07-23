@@ -59,6 +59,12 @@ your API, and the rest of the app is unchanged.
 
   *(Click any drawn line to cycle its style — the style picker is a single
   square split into four labelled pictogram quadrants.)*
+- **Copy / paste & character groups** — **Copy** a character (Ctrl/⌘+C) and
+  **Paste as new** (Ctrl/⌘+V) to reuse it anywhere, even in another language;
+  **Paste into** overlays the copied character onto the current one so a family
+  can share the same starting part. Give characters a **Group / family** name
+  (or hit **＋ Variant** to duplicate into the same group) and the sidebar sorts
+  them into labelled groups — handy when words in a category share a base shape.
 - **Basic shapes**: circle, ring, square, triangle, diamond, arc, dot —
   **dragged corner‑to‑corner so they fit neatly inside the grid lines**.
 - **Select tool (multi‑select + transform):** switch to **Select**, then drag a
@@ -81,13 +87,53 @@ your API, and the rest of the app is unchanged.
   don't create confusable glyphs.
 - **Export** any glyph as SVG.
 
+### Snap — add words from a photo 📷
+- **Take or upload a photo** (the camera opens directly on mobile); each photo is
+  **auto-traced into a character** entirely on your device — no image ever leaves
+  the browser.
+- A **review menu** per photo lets you tune the trace (detail, ink threshold,
+  line vs. dot style, invert), give it a **meaning** and **categories**, and check
+  the result before adding.
+- Adds the traced symbol as a **character** and, optionally, a **dictionary
+  word** in one step.
+
 ### Dictionary
-- Words with **meaning, part of speech, gender/class, and tags**.
+- Words with **meaning, tags, and multiple categories** — part of speech and
+  gender/class are **toggles**, so a word can be several things at once (e.g. both
+  noun *and* verb).
+- **Variable gender/class** — a word's gender can be **fixed**, or set to **vary
+  based on another word** (agreement): pick the word it follows in the editor, and
+  it inherits that word's gender automatically (updates live when the source
+  changes).
 - **Translations in any number of natural languages** (add your own).
-- **Spell** each word from your own glyphs.
-- **Compose words from other words** — a word can be built from parts that are
-  themselves words, and any part can be swapped for a different word. (You can
-  also do this inside rules with the *Word (lookup)* node.)
+- **A character can be a word on its own** — no romanization required. Leave the
+  word blank and it's named after its characters, or hit **“Make this character a
+  word”** in the Characters tab. Turn on **“new characters auto-become words”** to
+  do it for every new character automatically.
+- **Build words by combining characters that mean things** — click characters to
+  spell a word, then **“Combine character meanings”** composes the new word's
+  meaning from theirs (great for logographic scripts).
+- **Compose words from other words** too — parts are themselves words, swappable
+  later. (Also available inside rules via the *Word (lookup)* node.)
+- **Import a spreadsheet** (⤓ Import sheet) — upload a CSV/TSV or paste cells
+  copied from Excel / Google Sheets. Two modes:
+  - **Build a language** — if a column holds the **symbols** (emoji, characters,
+    signs), each row becomes a **character** with its **meaning** and **group**,
+    plus a matching dictionary word. Drop in a sheet of *symbols + meanings +
+    groups* and it turns straight into a working script and dictionary — then you
+    only have to add conjugation and grammar.
+  - **Symbols from an image** — attach a photo/scan of a **grid of symbols** and
+    it slices the grid (you set the number of columns), traces **each cell** into
+    that row's character, and matches them to the sheet's meanings in order — many
+    characters from one image.
+  - **Update existing (upsert)** — re-uploading matches by meaning/word and
+    **updates in place instead of duplicating**. So you can import a full sheet of
+    words first, then later import a smaller set *with an image* and it drops the
+    traced symbols onto the matching rows.
+  - **Add words** — review every word in a grid: **click the category toggles**,
+    let it **auto-assign the characters** that spell each word (matched from your
+    existing glyphs), and **click the little symbol box** to pick or make a
+    character for it.
 - Search/filter and **export to CSV**.
 - Parts of speech and genders are fully configurable per language.
 

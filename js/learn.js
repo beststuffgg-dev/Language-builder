@@ -142,7 +142,12 @@
     if (s.revealed) {
       face.appendChild(U.el("div", { style: { borderTop: "1px solid var(--line)", paddingTop: "10px", width: "80%" } }, [
         U.el("div", { text: primaryMeaning(p, w) || "(no translation)", style: { fontSize: "18px", color: "var(--accent-2)" } }),
-        w.pos ? U.el("div.hint", { text: w.pos + (w.gender ? " · " + w.gender : "") }) : null,
+        (function () {
+          const pos = (w.posList && w.posList.length ? w.posList : (w.pos ? [w.pos] : []));
+          const gen = (window.Lexicon && Lexicon.effectiveGender) ? Lexicon.effectiveGender(w) : (w.genderList && w.genderList.length ? w.genderList : (w.gender ? [w.gender] : []));
+          const bits = pos.concat(gen);
+          return bits.length ? U.el("div.hint", { text: bits.join(" · ") }) : null;
+        })(),
       ]));
     }
     card.appendChild(face);
