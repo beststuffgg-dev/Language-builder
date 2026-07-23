@@ -114,6 +114,40 @@
 
   function retrace(item) { item.glyph = P.trace(item.img, item.settings); }
 
+  /* ---------- Split a grid photo into many characters ---------- */
+  // Crop cell k (reading order) out of an image into a canvas (usable as a trace
+  // source and as an <img> via toDataURL). bottomFrac trims the written label.
+  function cropCell(img, cols, rows, k, bottomFrac) {
+    const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+    const cw = W / cols, ch = H / rows;
+    const col = k % cols, row = Math.floor(k / cols);
+    const bot = U.clamp(bottomFrac || 0, 0, 0.8), pad = 0.05;
+    const sx = col * cw + cw * pad, sw = cw * (1 - 2 * pad);
+    const sy = row * ch + ch * pad, sh = ch * (1 - bot - pad);
+    const outW = Math.max(8, Math.round(sw)), outH = Math.max(8, Math.round(sh));
+    const cv = document.createElement("canvas"); cv.width = outW; cv.height = outH;
+    cv.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+    return cv;
+  }
+  // Replace one grid photo with one card per cell (each traced independently).
+  function splitGrid(item, cols, rows, bottom) {
+    cols = U.clamp(Math.round(cols) || 1, 1, 20); rows = U.clamp(Math.round(rows) || 1, 1, 20);
+    const cells = [];
+    for (let k = 0; k < cols * rows; k++) {
+      const cv = cropCell(item.img, cols, rows, k, bottom);
+      const cell = {
+        id: U.uid("snap"), src: cv.toDataURL(), img: cv, name: item.name + " " + (k + 1),
+        settings: Object.assign({}, item.settings), headword: "", meaning: "", posList: [], addWord: true, done: false,
+      };
+      retrace(cell);
+      cells.push(cell);
+    }
+    const idx = P.items.indexOf(item);
+    if (idx >= 0) P.items.splice(idx, 1, ...cells); else P.items.push(...cells);
+    U.toast("Split into " + cells.length + " characters");
+    P.render();
+  }
+
   /* ---------- Render ---------- */
   P.render = function () {
     const root = document.getElementById("snapRoot");
@@ -126,7 +160,7 @@
 
     const header = U.el("div.card", {}, [
       U.el("h2", { text: "Add words from a photo" }),
-      U.el("p.muted", { text: "Snap or upload a photo of an object, a symbol, or handwriting. Each photo is traced into a character you can fine‑tune, name and give a meaning — then added to your dictionary. Everything runs on your device; no photo leaves the browser." }),
+      U.el("p.muted", { text: "Snap or upload a photo of an object, a symbol, or handwriting. Each photo is traced into a character you can fine‑tune, name and give a meaning — then added to your dictionary. Got a whole grid/page of symbols? Use “Split a grid of symbols” on the card to turn one photo into many characters. Everything runs on your device; no photo leaves the browser." }),
       U.el("div.inline-actions", {}, [
         U.el("button.btn.primary", { text: "📷  Take / choose photos", onClick: () => fileIn.click() }),
         P.items.length ? U.el("button.btn", { text: "Add all", onClick: addAll }) : null,
@@ -177,6 +211,21 @@
       U.el("label.field", {}, ["Ink threshold", thresh]),
       U.el("label.field", {}, ["Trace style", modeSel]),
       U.el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12px" } }, [invert, "Invert (light ink on dark)"]),
+    ]));
+
+    // Split a whole grid/page of symbols into one character per cell.
+    const gCols = U.el("input", { type: "number", min: "1", max: "20", value: 5 });
+    const gRows = U.el("input", { type: "number", min: "1", max: "20", value: 7 });
+    const gBot = U.el("input", { type: "range", min: "0", max: "0.6", step: "0.02", value: 0.26 });
+    card.appendChild(U.el("details.mini-details", {}, [
+      U.el("summary", { text: "Split a grid of symbols → many characters" }),
+      U.el("div.snap-controls", {}, [
+        U.el("label.field", {}, ["Columns", gCols]),
+        U.el("label.field", {}, ["Rows", gRows]),
+        U.el("label.field", {}, ["Ignore bottom label", gBot]),
+      ]),
+      U.el("div.hint", { text: "For a photo of a grid/table of symbols: each cell becomes its own character card (label band trimmed)." }),
+      U.el("button.btn.small.primary", { text: "Split into cells", onClick: () => splitGrid(item, +gCols.value, +gRows.value, +gBot.value) }),
     ]));
 
     // word fields
