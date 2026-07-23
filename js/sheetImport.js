@@ -4,7 +4,12 @@
    characters that spell it, and click the little symbol box to pick or make a
    character for it. Runs entirely in the browser. */
 (function () {
-  const S = { rows: [], headers: [], hasHeader: true, map: {}, items: [], ready: false };
+  const S = {
+    rows: [], headers: [], hasHeader: true, map: {}, items: [], ready: false,
+    // optional grid image whose cells are traced onto the rows (in order)
+    img: null, imgSrc: "", imgCols: 5, imgBottom: 0.26, imgDetail: 8, imgThreshold: 0.55, imgInvert: false,
+    upsert: true, // re-uploading the same data updates existing entries instead of duplicating
+  };
   function project() { return Store.getActive(); }
 
   /* ---------- Parsing (CSV / TSV, quote-aware) ---------- */
@@ -99,6 +104,7 @@
   /* ---------- Render ---------- */
   S.open = function () {
     S.ready = false; S.rows = []; S.items = [];
+    S.img = null; S.imgSrc = "";
     S.render();
   };
 
@@ -117,7 +123,7 @@
 
     if (!S.ready) { renderInput(root); return; }
     renderMapping(root);
-    if (S.mode === "chars") renderCharsReview(root);
+    if (S.mode === "chars") { renderImagePanel(root); renderCharsReview(root); }
     else renderReview(root);
   };
 
@@ -181,8 +187,10 @@
     const p = project();
     const count = () => S.items.filter((it) => it.include).length;
 
+    const upsertChk = U.el("input", { type: "checkbox", checked: S.upsert !== false, onChange: (e) => { S.upsert = e.target.checked; } });
     const bar = U.el("div", { style: { display: "flex", gap: "8px", alignItems: "center", marginBottom: "10px", flexWrap: "wrap" } }, [
       U.el("span.hint", { text: S.items.length + " rows · " + count() + " selected", style: { flex: "1" } }),
+      U.el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12px" }, title: "Update a word that already has the same spelling instead of adding a duplicate" }, [upsertChk, "Update existing (match by word)"]),
       U.el("button.btn", { text: "✦ Auto-assign characters", title: "Spell each word using your existing characters (longest match)", onClick: autoSpellAll }),
       U.el("button.btn.primary", { text: "Import " + count() + " words", onClick: doImport }),
     ]);
@@ -213,14 +221,84 @@
     root.appendChild(table);
   }
 
+  /* ---------- Symbols from an image: slice a grid, trace each cell onto a row ---------- */
+  function gridRows() { return Math.max(1, Math.ceil(S.items.length / Math.max(1, S.imgCols))); }
+  // Crop cell k (reading order) out of the attached image into a canvas.
+  function sliceCell(k, cols, rows) {
+    const img = S.img; if (!img) return null;
+    const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+    const cw = W / cols, ch = H / rows;
+    const col = k % cols, row = Math.floor(k / cols);
+    const bot = U.clamp(S.imgBottom || 0, 0, 0.8);           // ignore the written label band
+    const pad = 0.06;                                         // trim gridlines
+    const sx = col * cw + cw * pad, sw = cw * (1 - 2 * pad);
+    const sy = row * ch + ch * pad, sh = ch * (1 - bot - pad);
+    if (sw <= 1 || sh <= 1) return null;
+    const outW = Math.max(8, Math.round(sw)), outH = Math.max(8, Math.round(sh));
+    const cv = document.createElement("canvas"); cv.width = outW; cv.height = outH;
+    cv.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+    return cv;
+  }
+  function traceOntoRows() {
+    if (!S.img || !window.PhotoImport) { U.toast("Attach an image first.", true); return; }
+    const cols = Math.max(1, S.imgCols), rows = gridRows();
+    const settings = { detail: S.imgDetail, threshold: S.imgThreshold, invert: S.imgInvert, mode: "strokes" };
+    let n = 0;
+    S.items.forEach((item, k) => {
+      const cv = sliceCell(k, cols, rows); if (!cv) return;
+      const g = PhotoImport.trace(cv, settings);
+      if (g && (g.nodes.length || g.connections.length || g.shapes.length)) { item.glyph = g; item.symbol = ""; n++; }
+    });
+    U.toast(n ? "Traced " + n + " symbol" + (n === 1 ? "" : "s") + " from the image" : "Nothing traced — adjust detail/threshold.", !n);
+    S.render();
+  }
+
+  function renderImagePanel(root) {
+    const fileIn = U.el("input", { type: "file", accept: "image/*", capture: "environment", hidden: true, onChange: (e) => {
+      const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+      const rd = new FileReader(); rd.onload = () => {
+        const img = new Image(); img.onload = () => { S.img = img; S.imgSrc = rd.result; S.render(); }; img.onerror = () => U.toast("Couldn't read image", true); img.src = rd.result;
+      }; rd.readAsDataURL(f);
+    } });
+
+    const body = [U.el("div", { style: { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" } }, [
+      U.el("span.flabel", { text: "Symbols from an image (optional)" }),
+      U.el("button.btn.small", { text: S.img ? "Replace image" : "📷 Attach grid image", onClick: () => fileIn.click() }),
+      S.img ? U.el("button.btn.small.ghost", { text: "Remove", onClick: () => { S.img = null; S.imgSrc = ""; S.render(); } }) : null,
+      fileIn,
+      U.el("span.hint", { text: S.img ? "Cells are matched to rows left-to-right, top-to-bottom." : "A photo/scan of a grid of symbols; each cell becomes the row’s character." }),
+    ])];
+
+    if (S.img) {
+      const colsIn = U.el("input", { type: "number", min: "1", max: "20", value: S.imgCols, onChange: (e) => { S.imgCols = U.clamp(+e.target.value || 1, 1, 20); S.render(); } });
+      const detail = U.el("input", { type: "range", min: "3", max: "16", value: S.imgDetail, onInput: (e) => { S.imgDetail = +e.target.value; } });
+      const thresh = U.el("input", { type: "range", min: "0.15", max: "0.9", step: "0.02", value: S.imgThreshold, onInput: (e) => { S.imgThreshold = +e.target.value; } });
+      const bottom = U.el("input", { type: "range", min: "0", max: "0.6", step: "0.02", value: S.imgBottom, onInput: (e) => { S.imgBottom = +e.target.value; } });
+      const invert = U.el("input", { type: "checkbox", checked: S.imgInvert, onChange: (e) => { S.imgInvert = e.target.checked; } });
+      body.push(U.el("div", { style: { display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", marginTop: "10px" } }, [
+        U.el("img", { src: S.imgSrc, style: { height: "84px", borderRadius: "8px", border: "1px solid var(--line-2)" } }),
+        U.el("label.field", {}, ["Columns in image", colsIn]),
+        U.el("label.field", {}, ["Detail", detail]),
+        U.el("label.field", {}, ["Ink threshold", thresh]),
+        U.el("label.field", {}, ["Ignore bottom label", bottom]),
+        U.el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12px" } }, [invert, "Invert"]),
+        U.el("button.btn.primary.small", { text: "Trace symbols onto rows", onClick: traceOntoRows }),
+      ]));
+      body.push(U.el("div.hint", { text: S.imgCols + " columns × " + gridRows() + " rows for " + S.items.length + " entries." }));
+    }
+    root.appendChild(U.el("div.card", {}, body));
+  }
+
   /* ---------- Characters mode: build a language from symbol+meaning+group ---------- */
   function renderCharsReview(root) {
     const p = project();
     const count = () => S.items.filter((it) => it.include).length;
     const logoChk = U.el("input", { type: "checkbox", checked: S.logographic !== false, onChange: (e) => { S.logographic = e.target.checked; } });
+    const upsertChk = U.el("input", { type: "checkbox", checked: S.upsert !== false, onChange: (e) => { S.upsert = e.target.checked; } });
 
     const bar = U.el("div", { style: { display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px", flexWrap: "wrap" } }, [
       U.el("span.hint", { text: S.items.length + " rows · " + count() + " characters", style: { flex: "1" } }),
+      U.el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12px" }, title: "Match by meaning and update existing characters instead of adding duplicates" }, [upsertChk, "Update existing (match by meaning)"]),
       U.el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12px" } }, [logoChk, "Logographic (1 character = 1 word)"]),
       U.el("button.btn.primary", { text: "Build language (" + count() + ")", onClick: doImportChars }),
     ]);
@@ -238,7 +316,12 @@
     S.items.forEach((item) => {
       const inc = U.el("input", { type: "checkbox", checked: item.include, onChange: (e) => { item.include = e.target.checked; } });
       const preview = U.el("div.sym-slot", { style: { cursor: "default" } });
-      const drawPrev = () => { U.clear(preview); preview.appendChild(GlyphRender.render({ grid: p.defaultGrid, nodes: [], connections: [], shapes: [], text: item.symbol || "" }, { size: 34, style: p.style, strokeWidth: 3 })); };
+      const drawPrev = () => {
+        U.clear(preview);
+        const traced = item.glyph && (item.glyph.nodes.length || item.glyph.connections.length || item.glyph.shapes.length);
+        const gobj = traced ? item.glyph : { grid: p.defaultGrid, nodes: [], connections: [], shapes: [], text: item.symbol || "" };
+        preview.appendChild(GlyphRender.render(gobj, { size: 34, style: p.style, strokeWidth: 3 }));
+      };
       drawPrev();
       const symIn = U.el("input", { value: item.symbol, style: { width: "64px" }, title: "the symbol shown for this character", onInput: (e) => { item.symbol = e.target.value; drawPrev(); } });
       const meanIn = U.el("input", { value: item.meaning, style: { minWidth: "120px" }, onInput: (e) => { item.meaning = e.target.value; } });
@@ -256,28 +339,74 @@
     root.appendChild(table);
   }
 
+  // Find an existing glyph that this row should update (match by meaning, then romanization).
+  function matchGlyph(p, meaning, rom) {
+    const m = meaning.toLowerCase(), r = (rom || "").toLowerCase();
+    if (m) { const g = p.glyphs.find((x) => (x.meaning || "").toLowerCase() === m); if (g) return g; }
+    if (r) { const g = p.glyphs.find((x) => (x.romanization || "").toLowerCase() === r); if (g) return g; }
+    return null;
+  }
+  // Find an existing dictionary word for this meaning/word (so re-uploads don't duplicate).
+  function matchWord(p, meaning, rom) {
+    const m = meaning.toLowerCase(), r = (rom || "").toLowerCase();
+    return p.lexicon.find((w) =>
+      (m && ((w.definition || "").toLowerCase() === m || (w.translations && Object.keys(w.translations).some((k) => (w.translations[k] || "").toLowerCase() === m)))) ||
+      (r && (w.headword || "").toLowerCase() === r)
+    ) || null;
+  }
+
   function doImportChars() {
     const p = project();
-    let n = 0;
+    const langs = p.translationLanguages.length ? p.translationLanguages : ["English"];
+    let added = 0, updated = 0;
     S.items.forEach((item) => {
       if (!item.include) return;
       const meaning = (item.meaning || "").trim();
       const symbol = (item.symbol || "").trim();
-      if (!meaning && !symbol) return;
-      const g = {
-        id: U.uid("gly"),
-        name: meaning || symbol || "symbol",
-        romanization: (item.headword || "").trim(),
-        sound: "", meaning, group: (item.group || "").trim(), text: symbol,
-        grid: U.clone(p.defaultGrid), nodes: [], connections: [], shapes: [],
+      const rom = (item.headword || "").trim();
+      const group = (item.group || "").trim();
+      const traced = item.glyph && (item.glyph.nodes.length || item.glyph.connections.length || item.glyph.shapes.length);
+      if (!meaning && !symbol && !traced) return;
+
+      // apply the drawing/symbol onto a glyph object. A traced drawing always wins;
+      // a text symbol is only applied when the glyph has no drawing yet, so
+      // re-uploading a placeholder emoji never wipes a real character.
+      const applyDrawing = (g) => {
+        if (traced) { g.grid = U.clone(item.glyph.grid); g.nodes = U.clone(item.glyph.nodes); g.connections = U.clone(item.glyph.connections); g.shapes = U.clone(item.glyph.shapes); g.text = ""; }
+        else if (symbol && !(g.nodes.length || g.connections.length || g.shapes.length)) { g.text = symbol; }
       };
-      p.glyphs.push(g);
-      if (window.Lexicon) Lexicon.wordFromGlyph(g); // each character is also a word
-      n++;
+
+      let g = S.upsert ? matchGlyph(p, meaning, rom) : null;
+      if (g) {
+        // update the existing character in place (keeps its id → linked words stay attached)
+        if (meaning) g.meaning = meaning;
+        if (group) g.group = group;
+        if (rom) g.romanization = rom;
+        applyDrawing(g);
+        if (window.Lexicon) Lexicon.syncWordFromGlyph(g);
+        updated++;
+      } else {
+        g = { id: U.uid("gly"), name: meaning || symbol || "symbol", romanization: rom, sound: "", meaning, group, text: "", grid: U.clone(p.defaultGrid), nodes: [], connections: [], shapes: [] };
+        applyDrawing(g);
+        p.glyphs.push(g);
+        added++;
+      }
+
+      // make sure a dictionary word exists for this character (upsert onto an
+      // existing word so a sheet-then-image workflow attaches rather than dupes)
+      const existingWord = S.upsert ? matchWord(p, meaning, rom) : null;
+      if (existingWord) {
+        if (!existingWord.glyphSeq || !existingWord.glyphSeq.length) existingWord.glyphSeq = [g.id];
+        if (existingWord.fromGlyph == null) existingWord.fromGlyph = g.id;
+        if (meaning && !existingWord.definition) { existingWord.definition = meaning; existingWord.translations[langs[0]] = existingWord.translations[langs[0]] || meaning; }
+        if (group && !existingWord.tags.includes(group)) existingWord.tags.push(group);
+      } else if (window.Lexicon) {
+        Lexicon.wordFromGlyph(g);
+      }
     });
-    if (S.logographic !== false && n) p.writingSystem = "logographic";
+    if (S.logographic !== false && (added + updated)) p.writingSystem = "logographic";
     Store.touch();
-    U.toast("Built " + n + " character" + (n === 1 ? "" : "s") + " into your language");
+    U.toast("Added " + added + " · updated " + updated + " character" + ((added + updated) === 1 ? "" : "s"));
     App.switchTab("glyphs");
   }
 
@@ -347,26 +476,37 @@
   function doImport() {
     const p = project();
     const langs = p.translationLanguages.length ? p.translationLanguages : ["English"];
-    let n = 0;
+    let added = 0, updated = 0;
     S.items.forEach((item) => {
       if (!item.include) return;
       const headword = (item.headword || "").trim() || (window.Lexicon ? Lexicon.nameFromGlyphs(item.glyphSeq) : "") || (item.meaning || "").trim();
       if (!headword && !item.glyphSeq.length) return;
-      const translations = {};
-      if (item.meaning) translations[langs[0]] = item.meaning.trim();
-      p.lexicon.push({
-        id: U.uid("word"), headword: headword || "(unnamed)",
-        translations, definition: (item.meaning || "").trim(),
-        posList: item.posList || [], pos: (item.posList || [])[0] || "",
-        genderList: item.genderList || [], gender: (item.genderList || [])[0] || "",
-        genderMode: "fixed", genderFrom: null,
-        tags: (item.tags || []).concat(["imported"]).filter((v, i, a) => a.indexOf(v) === i),
-        glyphSeq: item.glyphSeq.slice(), parts: [], fromGlyph: null, notes: "Imported from a spreadsheet.",
-      });
-      n++;
+      const meaning = (item.meaning || "").trim();
+      // upsert: update a word that already has the same spelling
+      const existing = S.upsert ? p.lexicon.find((w) => (w.headword || "").toLowerCase() === headword.toLowerCase()) : null;
+      if (existing) {
+        if (meaning) { existing.translations[langs[0]] = meaning; existing.definition = meaning; }
+        if (item.posList && item.posList.length) { existing.posList = item.posList; existing.pos = item.posList[0]; }
+        if (item.glyphSeq && item.glyphSeq.length) existing.glyphSeq = item.glyphSeq.slice();
+        (item.tags || []).forEach((t) => { if (!existing.tags.includes(t)) existing.tags.push(t); });
+        updated++;
+      } else {
+        const translations = {};
+        if (meaning) translations[langs[0]] = meaning;
+        p.lexicon.push({
+          id: U.uid("word"), headword: headword || "(unnamed)",
+          translations, definition: meaning,
+          posList: item.posList || [], pos: (item.posList || [])[0] || "",
+          genderList: item.genderList || [], gender: (item.genderList || [])[0] || "",
+          genderMode: "fixed", genderFrom: null,
+          tags: (item.tags || []).concat(["imported"]).filter((v, i, a) => a.indexOf(v) === i),
+          glyphSeq: item.glyphSeq.slice(), parts: [], fromGlyph: null, notes: "Imported from a spreadsheet.",
+        });
+        added++;
+      }
     });
     Store.touch();
-    U.toast("Imported " + n + " word" + (n === 1 ? "" : "s"));
+    U.toast("Imported " + added + (updated ? " · updated " + updated : "") + " word" + ((added + updated) === 1 ? "" : "s"));
     Lexicon.render();
   }
 

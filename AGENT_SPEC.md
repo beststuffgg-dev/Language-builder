@@ -343,7 +343,22 @@ turns straight into a script + dictionary.
 
 **Text glyphs.** A glyph may carry a literal `text` (emoji/character); `R.render`
 draws it centered and scaled to the box (beneath any strokes). This is how
-imported symbols display without being redrawn as strokes.
+imported symbols display without being redrawn as strokes. It's editable after
+import via the character editor's "Symbol" field (`glyph.text`).
+
+**Symbols from an image (many per image).** In chars mode you can attach a grid
+image. `sliceCell(k, cols, rows)` crops cell k (reading order; `imgBottom` trims a
+written-label band) into a canvas, and `traceOntoRows` runs `PhotoImport.trace`
+on each cell, storing the result on `item.glyph` — so one image yields many
+characters, matched to the sheet rows by order.
+
+**Upsert.** `S.upsert` (default on) makes re-imports update instead of duplicate:
+`matchGlyph` (by meaning, then romanization) and `matchWord` (by meaning/headword)
+find the existing entry and update it in place, keeping ids so links survive. A
+traced drawing always wins; a text symbol is only applied to a glyph that has no
+drawing yet, so re-uploading placeholder emoji never wipes a real character. This
+is what lets you import a words sheet first, then a smaller sheet + image that
+drops symbols onto the matching rows.
 
 ---
 

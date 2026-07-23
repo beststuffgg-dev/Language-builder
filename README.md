@@ -122,6 +122,14 @@ your API, and the rest of the app is unchanged.
     plus a matching dictionary word. Drop in a sheet of *symbols + meanings +
     groups* and it turns straight into a working script and dictionary — then you
     only have to add conjugation and grammar.
+  - **Symbols from an image** — attach a photo/scan of a **grid of symbols** and
+    it slices the grid (you set the number of columns), traces **each cell** into
+    that row's character, and matches them to the sheet's meanings in order — many
+    characters from one image.
+  - **Update existing (upsert)** — re-uploading matches by meaning/word and
+    **updates in place instead of duplicating**. So you can import a full sheet of
+    words first, then later import a smaller set *with an image* and it drops the
+    traced symbols onto the matching rows.
   - **Add words** — review every word in a grid: **click the category toggles**,
     let it **auto-assign the characters** that spell each word (matched from your
     existing glyphs), and **click the little symbol box** to pick or make a
