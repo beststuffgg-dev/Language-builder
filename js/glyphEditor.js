@@ -517,6 +517,8 @@
       field(logographic ? "Meaning (word)" : "Meaning", U.el("input", { value: g.meaning, placeholder: logographic ? "e.g. sun" : "optional — for logograms", onInput: (e) => { g.meaning = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
       field("Romanization", U.el("input", { value: g.romanization, placeholder: "optional — a character can be a word on its own", onInput: (e) => { g.romanization = e.target.value; syncWord(); Store.touch(); E.renderList(); } })),
       field("Sound / IPA", U.el("input", { value: g.sound, placeholder: "optional", onInput: (e) => { g.sound = e.target.value; Store.touch(); } })),
+      field("Symbol (emoji / letter)", U.el("input", { value: g.text || "", placeholder: "optional — shows a literal symbol; clear it to draw your own", onInput: (e) => { g.text = e.target.value; redrawCanvas(); E.renderList(); } })),
+      g.text ? U.el("div.hint", { text: "Tip: clear the Symbol to hide the emoji and draw the character with the tools below (strokes are drawn on top)." }) : null,
       field("Group / family", U.el("input", { value: g.group || "", placeholder: "optional — group related characters", list: "glyphGroups", onInput: (e) => { g.group = e.target.value; Store.touch(); E.renderList(); } })),
     ]);
     // datalist of existing group names for quick reuse
